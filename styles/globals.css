@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #ff9062;
+  --surface: #0e0e0e;
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-surface: var(--surface);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* --primary: #0a0a0a;
+    --surface: #ededed; */
+  }
+}
+
+
