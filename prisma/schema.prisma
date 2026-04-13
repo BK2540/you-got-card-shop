@@ -23,3 +23,21 @@ model Card {
   year      Int
   createdAt DateTime @default(now())
 }
+
+model Order {
+  id        String   @id @default(uuid())
+  total     Float
+  status    String   // PENDING, PAID
+  createdAt DateTime @default(now())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+}
+
+model Customer {
+  id    String @id @default(uuid())
+  name  String
+  email String
+
+  orders Order[]
+}
