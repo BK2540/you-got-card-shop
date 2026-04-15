@@ -31,11 +31,24 @@ export default function AdminPage() {
     return data;
   };
 
+  // load on mount
   useEffect(() => {
-    if (tab === "inventory") {
-      fetchCards();
-    }
-  }, [tab]);
+    let mounted = true;
+
+    getCards().then((data) => {
+      if (mounted) setCards(data);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // reload function
+  // const reload = async () => {
+  //   const data = await getCards();
+  //   setCards(data);
+  // };
 
   useEffect(() => {
     if (tab === "orders") {

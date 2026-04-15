@@ -3,6 +3,7 @@ import "@/styles/globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { FilterProvider } from "@/context/FilterContext";
 import Navbar from "@/components/Navbar";
+import PageBackground from "@/components/Background";
 
 export default function RootLayout({
   children,
@@ -15,7 +16,9 @@ export default function RootLayout({
         <CartProvider>
           <FilterProvider>
             <Navbar />
-            <main className="pt-20">{children}</main>
+            <div className="mt-12">
+              <PageBackground>{children}</PageBackground>
+            </div>
           </FilterProvider>
         </CartProvider>
       </body>

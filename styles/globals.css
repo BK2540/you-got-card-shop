@@ -1,22 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #ff9062;
+  --primary: #E85220;
   --surface: #0e0e0e;
+  --white: #FFFFFF;
+  --orange70: #FF7145;
 }
 
 @theme inline {
   --color-primary: var(--primary);
   --color-surface: var(--surface);
+  --color-white: var(--white);
+  --color-orange70: var(--orange70);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* --primary: #0a0a0a;
-    --surface: #ededed; */
-  }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
 }
-
-
