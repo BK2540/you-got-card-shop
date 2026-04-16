@@ -132,14 +132,14 @@ export default function Home() {
           <div className="absolute w-[300px] h-[400px] bg-black/50 blur-3xl translate-x-6 translate-y-10 rounded-3xl" />
 
           {/* card */}
-          <div className="relative w-[280px] sm:w-[320px] lg:w-[360px] rounded-3xl overflow-hidden bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl rotate-6 hover:rotate-0 transition duration-500">
+          <div className="relative w-full max-w-[400px] h-[600px] rounded-3xl overflow-hidden bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl rotate-6 hover:rotate-0 transition duration-500">
             {/* image */}
             <Image
               src={basketballImage}
               alt="card"
               className="w-full  object-cover"
-              width={480}
-              height={680}
+              width={400}
+              height={600}
             />
 
             {/* overlay */}
@@ -191,7 +191,7 @@ export default function Home() {
             {cards.map((card) => (
               <div
                 key={card.id}
-                className="min-w-full snap-center md:min-w-[calc(50%-2rem)] xl:min-w-[calc(22%-0.2rem)]"
+                className="min-w-full snap-center md:min-w-[calc(50%-2rem)] xl:min-w-[calc(30%-0.2rem)]"
               >
                 <CardItem card={card} />
               </div>

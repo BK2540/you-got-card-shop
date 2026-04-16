@@ -8,7 +8,7 @@ const Navbar = () => {
   const { cart } = useContext(CartContext);
 
   return (
-    <nav className="fixed top-0 w-full bg-black/10 px-8 py-4 flex justify-between z-10 backdrop-blur-2xl">
+    <nav className="fixed top-0 w-full bg-surface px-8 py-4 flex justify-between z-10 backdrop-blur-2xl">
       <Link href="/" className="text-orange-500 font-bold">
         GOT
       </Link>

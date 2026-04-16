@@ -3,7 +3,6 @@
 
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -18,16 +17,27 @@ model Card {
   name      String
   team      String
   price     Float
-  image     String
   grade     String
   year      Int
   createdAt DateTime @default(now())
+
+  images     CardImage[]
+  featuredIn HomeContent[]
+}
+
+model CardImage {
+  id     String  @id @default(uuid())
+  url    String
+  isHero Boolean @default(false)
+
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id])
 }
 
 model Order {
   id        String   @id @default(uuid())
   total     Float
-  status    String   // PENDING, PAID
+  status    String // PENDING, PAID
   createdAt DateTime @default(now())
 
   customerId String
@@ -40,4 +50,16 @@ model Customer {
   email String
 
   orders Order[]
+}
+
+model HomeContent {
+  id          String   @id @default(uuid())
+  title       String
+  subtitle    String
+  description String
+  price       Float
+  featuredId  String? // relation to Card
+  createdAt   DateTime @default(now())
+
+  featured Card? @relation(fields: [featuredId], references: [id])
 }

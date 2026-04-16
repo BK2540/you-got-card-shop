@@ -5,6 +5,7 @@
   --surface: #0e0e0e;
   --white: #FFFFFF;
   --orange70: #FF7145;
+  --gray40: #C9C6C5;
 }
 
 @theme inline {
@@ -12,6 +13,7 @@
   --color-surface: var(--surface);
   --color-white: var(--white);
   --color-orange70: var(--orange70);
+  --color-gray40: var(--gray40);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -20,4 +22,15 @@
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-20px); }
+}
+
+.input-no-spinner::-webkit-outer-spin-button,
+.input-no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input-no-spinner[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

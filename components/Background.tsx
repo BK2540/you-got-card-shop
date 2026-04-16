@@ -6,17 +6,17 @@ import bg from "@/public/ball.png";
 
 export default function PageBackground({ children }: { children: ReactNode }) {
   return (
-    <div className="relative min-h-screen bg-black text-white overflow-hidden z-0">
+    <div className="relative min-h-screen bg-black text-white overflow-hidden z-0 flex flex-col items-center">
       {/* 🌑 BASE */}
-      <div className="absolute inset-0 bg-black" />
+      <div className="pointer-events-none absolute inset-0 bg-black" />
 
       {/* 🔥 ORANGE ORB (MAIN LIGHT) */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="pointer-events-none fixed inset-0 top-16 flex items-center justify-center">
         {/* <div className="w-[700px] h-[700px] rounded-full bg-primary opacity-60 blur-[120px]" /> */}
         <Image
           src={bg}
           alt="bg"
-          width={860}
+          width={740}
           // height={700}
           className="opacity-40 blur-[50px]"
         />
@@ -33,7 +33,9 @@ export default function PageBackground({ children }: { children: ReactNode }) {
       </div>
 
       {/* CONTENT */}
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 w-full xl:max-w-[1024px] 2xl:max-w-[1280px]">
+        {children}
+      </div>
     </div>
   );
 }

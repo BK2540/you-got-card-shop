@@ -2,8 +2,7 @@
 import "@/styles/globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { FilterProvider } from "@/context/FilterContext";
-import Navbar from "@/components/Navbar";
-import PageBackground from "@/components/Background";
+import AppShell from "@/components/AppShell";
 
 export default function RootLayout({
   children,
@@ -15,10 +14,7 @@ export default function RootLayout({
       <body className="bg-black text-white">
         <CartProvider>
           <FilterProvider>
-            <Navbar />
-            <div className="mt-12">
-              <PageBackground>{children}</PageBackground>
-            </div>
+            <AppShell>{children}</AppShell>
           </FilterProvider>
         </CartProvider>
       </body>
