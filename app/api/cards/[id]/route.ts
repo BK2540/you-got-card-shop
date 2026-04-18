@@ -8,10 +8,15 @@ import path from "node:path";
 type CardWithImages = {
   id: string;
   name: string;
+  playerName: string;
   team: string;
   price: number;
   grade: string;
   year: number;
+  quantity: number;
+  status: CardStatus;
+  isRecommended: boolean;
+  description: string;
   createdAt: Date;
   images: {
     id: string;
@@ -97,11 +102,14 @@ export async function PUT(
     const formData = await req.formData();
 
     const name = formData.get("name")?.toString().trim() ?? "";
+    const playerName = formData.get("playerName")?.toString().trim() ?? "";
     const team = formData.get("team")?.toString().trim() ?? "";
     const grade = formData.get("grade")?.toString().trim() ?? "";
     const price = Number(formData.get("price"));
     const year = Number(formData.get("year"));
     const quantity = Number(formData.get("quantity"));
+    const isRecommended =
+      formData.get("isRecommended")?.toString() === "true";
     const description = formData.get("description")?.toString() ?? "";
     const status = (formData.get("status")?.toString() ?? "ACTIVE") as CardStatus;
     const normalizedStatus =
@@ -113,6 +121,7 @@ export async function PUT(
 
     if (
       !name ||
+      !playerName ||
       !team ||
       !grade ||
       Number.isNaN(price) ||
@@ -190,11 +199,13 @@ export async function PUT(
       where: { id },
       data: {
         name,
+        playerName,
         team,
         price,
         grade,
         year,
         quantity,
+        isRecommended,
         description,
         status: normalizedStatus,
         images: {

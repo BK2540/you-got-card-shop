@@ -38,7 +38,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </AdminPortalProvider>
       )}
       {!isAdminPortal && (
-        <div className="mt-12">
+        <div className="mt-14">
           <PageBackground>{children}</PageBackground>
         </div>
       )}

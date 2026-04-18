@@ -71,7 +71,7 @@ const HomeContentForm = ({
           </option>
           {cards.map((card) => (
             <option key={card.id} value={card.id} className="bg-surface">
-              {card.name}
+              {card.playerName} - {card.name}
             </option>
           ))}
         </select>

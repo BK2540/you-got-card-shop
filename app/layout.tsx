@@ -3,6 +3,7 @@ import "@/styles/globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { FilterProvider } from "@/context/FilterContext";
 import AppShell from "@/components/AppShell";
+import { AuthProvider } from "@/context/AuthContext";
 
 export default function RootLayout({
   children,
@@ -12,11 +13,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-black text-white">
-        <CartProvider>
-          <FilterProvider>
-            <AppShell>{children}</AppShell>
-          </FilterProvider>
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <FilterProvider>
+              <AppShell>{children}</AppShell>
+            </FilterProvider>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

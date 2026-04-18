@@ -46,12 +46,14 @@ type UploadPreview = {
 
 type InventoryFormState = {
   name: string;
+  playerName: string;
   team: string;
   quantity: string;
   status: CardStatus;
   price: string;
   grade: string;
   year: string;
+  isRecommended: boolean;
   description: string;
 };
 
@@ -64,6 +66,7 @@ const cardStatuses: CardStatus[] = ["ACTIVE", "INACTIVE", "OUT_OF_STOCK"];
 
 const defaultFormState: InventoryFormState = {
   name: "",
+  playerName: "",
   team: "",
   price: "",
   grade: "",
@@ -71,6 +74,7 @@ const defaultFormState: InventoryFormState = {
   year: "2024",
   quantity: "0",
   status: "ACTIVE",
+  isRecommended: false,
 };
 
 const defaultQueryState = {
@@ -78,6 +82,7 @@ const defaultQueryState = {
   pageSize: 6,
   search: "",
   status: "ALL" as CardStatus | "ALL",
+  recommendation: "ALL" as "ALL" | "RECOMMENDED" | "NOT_RECOMMENDED",
   sortBy: "createdAt" as InventoryCardSortField,
   sortDirection: "desc" as InventoryCardSortDirection,
 };
@@ -91,6 +96,7 @@ const defaultMetaState: Omit<PaginatedCardsResponse, "items"> = {
   sortDirection: "desc",
   search: "",
   status: "ALL",
+  recommendation: "ALL",
 };
 
 const dialogSx = {
@@ -135,6 +141,7 @@ const InventoryPage = ({
           sortDirection: response.sortDirection,
           search: response.search,
           status: response.status,
+          recommendation: response.recommendation,
         });
         return response;
       } finally {
@@ -220,11 +227,13 @@ const InventoryPage = ({
 
     const formData = new FormData();
     formData.append("name", form.name);
+    formData.append("playerName", form.playerName);
     formData.append("team", form.team);
     formData.append("price", String(Number(form.price || 0)));
     formData.append("grade", form.grade);
     formData.append("year", String(Number(form.year || 0)));
     formData.append("quantity", String(Number(form.quantity || 0)));
+    formData.append("isRecommended", String(form.isRecommended));
     formData.append("description", form.description);
     formData.append("status", form.status);
     formData.append("heroIndex", "0");
@@ -348,6 +357,16 @@ const InventoryPage = ({
     }));
   };
 
+  const handleInventoryRecommendationChange = (
+    recommendation: "ALL" | "RECOMMENDED" | "NOT_RECOMMENDED",
+  ) => {
+    setInventoryQuery((current) => ({
+      ...current,
+      recommendation,
+      page: 1,
+    }));
+  };
+
   const handleInventorySortChange = (sortBy: InventoryCardSortField) => {
     setInventoryQuery((current) => {
       const sortDirection =
@@ -374,6 +393,7 @@ const InventoryPage = ({
 
   const isFormIncomplete =
     form.name.trim() === "" ||
+    form.playerName.trim() === "" ||
     form.team.trim() === "" ||
     form.price.trim() === "" ||
     form.grade.trim() === "" ||
@@ -496,6 +516,14 @@ const InventoryPage = ({
                   />
 
                   <CustomInput
+                    placeholder="Player Name*"
+                    value={form.playerName}
+                    onChange={(e) =>
+                      setForm({ ...form, playerName: e.target.value })
+                    }
+                  />
+
+                  <CustomInput
                     placeholder="Team*"
                     value={form.team}
                     onChange={(e) => setForm({ ...form, team: e.target.value })}
@@ -537,6 +565,21 @@ const InventoryPage = ({
                       </option>
                     ))}
                   </select>
+
+                  <label className="flex items-center gap-2 text-sm text-gray-200">
+                    <input
+                      type="checkbox"
+                      checked={form.isRecommended}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          isRecommended: e.target.checked,
+                        })
+                      }
+                      className="h-4 w-4 accent-orange-500"
+                    />
+                    Mark as Recommended
+                  </label>
 
                   <div>
                     <p className="text-primary">
@@ -613,6 +656,14 @@ const InventoryPage = ({
                 />
 
                 <CustomInput
+                  placeholder="Player Name"
+                  value={form.playerName}
+                  onChange={(e) =>
+                    setForm({ ...form, playerName: e.target.value })
+                  }
+                />
+
+                <CustomInput
                   placeholder="Team"
                   value={form.team}
                   onChange={(e) => setForm({ ...form, team: e.target.value })}
@@ -648,6 +699,21 @@ const InventoryPage = ({
                     </option>
                   ))}
                 </select>
+
+                <label className="flex items-center gap-2 text-sm text-gray-200">
+                  <input
+                    type="checkbox"
+                    checked={form.isRecommended}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        isRecommended: e.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 accent-orange-500"
+                  />
+                  Mark as Recommended
+                </label>
 
                 {renderImageUploader()}
 
@@ -699,7 +765,7 @@ const InventoryPage = ({
 
             <div className="flex flex-col gap-3 lg:flex-row">
               <CustomInput
-                placeholder="Search by name, team, grade"
+                placeholder="Search by card/player/team/grade"
                 value={inventoryQuery.search}
                 onChange={(e) => handleInventorySearchChange(e.target.value)}
                 className="min-w-[260px]"
@@ -727,12 +793,32 @@ const InventoryPage = ({
                   </option>
                 ))}
               </select>
+
+              <select
+                className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
+                value={inventoryQuery.recommendation}
+                onChange={(e) =>
+                  handleInventoryRecommendationChange(
+                    e.target.value as "ALL" | "RECOMMENDED" | "NOT_RECOMMENDED",
+                  )
+                }
+              >
+                <option value="ALL" className="bg-surface">
+                  All recommendations
+                </option>
+                <option value="RECOMMENDED" className="bg-surface">
+                  Recommended
+                </option>
+                <option value="NOT_RECOMMENDED" className="bg-surface">
+                  Not recommended
+                </option>
+              </select>
             </div>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-white/8">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[880px] text-sm">
+              <table className="w-full min-w-[1040px] text-sm">
                 <thead className="bg-white/[0.03] text-left text-xs uppercase tracking-[0.18em] text-gray-400">
                   <tr>
                     <th className="px-4 py-4">
@@ -741,6 +827,14 @@ const InventoryPage = ({
                         onClick={() => handleInventorySortChange("name")}
                       >
                         Card{sortLabel("name")}
+                      </button>
+                    </th>
+                    <th className="px-4 py-4">
+                      <button
+                        type="button"
+                        onClick={() => handleInventorySortChange("playerName")}
+                      >
+                        Player{sortLabel("playerName")}
                       </button>
                     </th>
                     <th className="px-4 py-4">Team</th>
@@ -777,6 +871,14 @@ const InventoryPage = ({
                         Year{sortLabel("year")}
                       </button>
                     </th>
+                    <th className="px-4 py-4">
+                      <button
+                        type="button"
+                        onClick={() => handleInventorySortChange("isRecommended")}
+                      >
+                        Recommended{sortLabel("isRecommended")}
+                      </button>
+                    </th>
                     <th className="px-4 py-4 text-right">Action</th>
                   </tr>
                 </thead>
@@ -785,7 +887,7 @@ const InventoryPage = ({
                   {inventoryLoading && (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={10}
                         className="px-4 py-10 text-center text-sm text-gray-400"
                       >
                         Loading inventory...
@@ -820,6 +922,9 @@ const InventoryPage = ({
                             </div>
                           </div>
                         </td>
+                        <td className="px-4 py-4 text-gray-200">
+                          {card.playerName}
+                        </td>
                         <td className="px-4 py-4 text-gray-200">{card.team}</td>
                         <td className="px-4 py-4 text-gray-200">
                           {card.grade}
@@ -841,6 +946,17 @@ const InventoryPage = ({
                         </td>
                         <td className="px-4 py-4 text-gray-300">{card.year}</td>
                         <td className="px-4 py-4">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                              card.isRecommended
+                                ? "bg-orange-500/20 text-orange-300"
+                                : "bg-white/10 text-gray-300"
+                            }`}
+                          >
+                            {card.isRecommended ? "Recommended" : "No"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
@@ -849,12 +965,14 @@ const InventoryPage = ({
                                 setEditingCard(card);
                                 setForm({
                                   name: card.name,
+                                  playerName: card.playerName,
                                   team: card.team,
                                   price: String(card.price),
                                   grade: card.grade,
                                   year: String(card.year),
                                   quantity: String(card.quantity),
                                   status: card.status,
+                                  isRecommended: card.isRecommended,
                                   description: card.description,
                                 });
                                 setOpenEditDialog(true);
@@ -881,7 +999,7 @@ const InventoryPage = ({
                   {!inventoryLoading && cards.length === 0 && (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={10}
                         className="px-4 py-10 text-center text-sm text-gray-400"
                       >
                         No cards matched your current filters.

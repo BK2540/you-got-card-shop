@@ -12,6 +12,7 @@ export type CardStatus =  "ACTIVE" |
 export type Card = {
   id: string;
   name: string;
+  playerName: string;
   team: string;
   price: number;
   image: string;
@@ -19,6 +20,8 @@ export type Card = {
   grade: string;
   year: number;
   quantity: number;
+  isRecommended: boolean;
+  isNewArrival?: boolean;
   description: string;
   status: CardStatus;
 };
@@ -26,10 +29,12 @@ export type Card = {
 export type InventoryCardSortField =
   | "createdAt"
   | "name"
+  | "playerName"
   | "price"
   | "quantity"
   | "year"
-  | "status";
+  | "status"
+  | "isRecommended";
 
 export type InventoryCardSortDirection = "asc" | "desc";
 
@@ -43,7 +48,14 @@ export type PaginatedCardsResponse = {
   sortDirection: InventoryCardSortDirection;
   search: string;
   status: CardStatus | "ALL";
+  recommendation: "ALL" | "RECOMMENDED" | "NOT_RECOMMENDED";
 };
 
 
 export type AdminTab = "inventory" | "orders" | "customers" | "dashboard" | "home";
+
+export type CartItem = {
+  cardId: string;
+  quantity: number;
+  card: Card;
+};

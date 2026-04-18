@@ -8,10 +8,15 @@ import { randomUUID } from "node:crypto";
 type CardWithImages = {
   id: string;
   name: string;
+  playerName: string;
   team: string;
   price: number;
   grade: string;
   year: number;
+  quantity: number;
+  status: CardStatus;
+  isRecommended: boolean;
+  description: string;
   createdAt: Date;
   images: {
     id: string;
@@ -27,6 +32,7 @@ type ImageOrderItem = {
 };
 
 const uploadDir = path.join(process.cwd(), "public", "uploads", "cards");
+const NEW_ARRIVAL_LIMIT = 8;
 
 const sortImagesWithHeroFirst = (images: CardWithImages["images"]) => {
   const heroImage = images.find((image) => image.isHero);
@@ -43,6 +49,13 @@ const formatCard = (card: CardWithImages) => {
     images,
     image: images[0]?.url ?? "",
   };
+};
+
+const toValidNumber = (value: string | null) => {
+  if (!value) return undefined;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 };
 
 const resolveImageOrder = (formData: FormData) => {
@@ -85,14 +98,75 @@ export async function GET(req: Request) {
   const view = searchParams.get("view");
 
   if (view !== "admin") {
+    const search = searchParams.get("search")?.trim() ?? "";
+    const team = searchParams.get("team")?.trim() ?? "";
+    const grade = searchParams.get("grade")?.trim() ?? "";
+    const year = searchParams.get("year")?.trim() ?? "";
+    const playerName = searchParams.get("playerName")?.trim() ?? "";
+    const minPrice = toValidNumber(searchParams.get("minPrice"));
+    const maxPrice = toValidNumber(searchParams.get("maxPrice"));
+    const section = searchParams.get("section");
+    const limitParam = Number(searchParams.get("limit") ?? "");
+    const limit =
+      Number.isFinite(limitParam) && limitParam > 0
+        ? Math.min(limitParam, 24)
+        : undefined;
+
+    const where: Prisma.CardWhereInput = {
+      status: CardStatus.ACTIVE,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search } },
+              { playerName: { contains: search } },
+              { team: { contains: search } },
+              { grade: { contains: search } },
+            ],
+          }
+        : {}),
+      ...(team ? { team: { contains: team } } : {}),
+      ...(grade ? { grade: { contains: grade } } : {}),
+      ...(playerName ? { playerName: { contains: playerName } } : {}),
+      ...(year && Number.isFinite(Number(year)) ? { year: Number(year) } : {}),
+      ...((minPrice !== undefined || maxPrice !== undefined)
+        ? {
+            price: {
+              ...(minPrice !== undefined ? { gte: minPrice } : {}),
+              ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+            },
+          }
+        : {}),
+      ...(section === "recommended" ? { isRecommended: true } : {}),
+    };
+
     const cards = await prisma.card.findMany({
+      where,
       orderBy: { createdAt: "desc" },
+      take: section === "new-arrival" ? NEW_ARRIVAL_LIMIT : limit,
       include: {
         images: true,
       },
     });
 
-    return NextResponse.json(cards.map(formatCard));
+    const newArrivalCardIds = new Set(
+      cards.slice(0, NEW_ARRIVAL_LIMIT).map((card) => card.id),
+    );
+    const formattedCards = cards.map((card) => ({
+      ...formatCard(card),
+      isNewArrival: newArrivalCardIds.has(card.id),
+    }));
+
+    if (section === "recommended") {
+      return NextResponse.json(
+        formattedCards.filter((card) => card.isRecommended),
+      );
+    }
+
+    if (section === "new-arrival") {
+      return NextResponse.json(formattedCards.slice(0, NEW_ARRIVAL_LIMIT));
+    }
+
+    return NextResponse.json(formattedCards);
   }
 
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
@@ -102,6 +176,7 @@ export async function GET(req: Request) {
   );
   const search = searchParams.get("search")?.trim() ?? "";
   const status = searchParams.get("status") ?? "ALL";
+  const recommendation = searchParams.get("recommendation") ?? "ALL";
   const sortBy = searchParams.get("sortBy") ?? "createdAt";
   const sortDirection =
     searchParams.get("sortDirection") === "asc" ? "asc" : "desc";
@@ -111,6 +186,7 @@ export async function GET(req: Request) {
       ? {
           OR: [
             { name: { contains: search } },
+            { playerName: { contains: search } },
             { team: { contains: search } },
             { grade: { contains: search } },
           ],
@@ -119,15 +195,22 @@ export async function GET(req: Request) {
     ...(status !== "ALL" && Object.values(CardStatus).includes(status as CardStatus)
       ? { status: status as CardStatus }
       : {}),
+    ...(recommendation === "RECOMMENDED"
+      ? { isRecommended: true }
+      : recommendation === "NOT_RECOMMENDED"
+        ? { isRecommended: false }
+        : {}),
   };
 
   const sortableFields = new Set([
     "createdAt",
     "name",
+    "playerName",
     "price",
     "quantity",
     "year",
     "status",
+    "isRecommended",
   ]);
   const normalizedSortBy = sortableFields.has(sortBy) ? sortBy : "createdAt";
 
@@ -154,6 +237,7 @@ export async function GET(req: Request) {
     sortDirection,
     search,
     status,
+    recommendation,
   });
 }
 
@@ -162,11 +246,14 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const name = formData.get("name")?.toString().trim() ?? "";
+    const playerName = formData.get("playerName")?.toString().trim() ?? "";
     const team = formData.get("team")?.toString().trim() ?? "";
     const grade = formData.get("grade")?.toString().trim() ?? "";
     const price = Number(formData.get("price"));
     const year = Number(formData.get("year"));
     const quantity = Number(formData.get("quantity"));
+    const isRecommended =
+      formData.get("isRecommended")?.toString() === "true";
     const description = formData.get("description")?.toString() ?? "";
     const status = (formData.get("status")?.toString() ?? "ACTIVE") as CardStatus;
     const normalizedStatus =
@@ -177,6 +264,7 @@ export async function POST(req: Request) {
 
     if (
       !name ||
+      !playerName ||
       !team ||
       !grade ||
       Number.isNaN(price) ||
@@ -228,11 +316,13 @@ export async function POST(req: Request) {
     const card = await prisma.card.create({
       data: {
         name,
+        playerName,
         team,
         price,
         grade,
         year,
         quantity,
+        isRecommended,
         description,
         status: normalizedStatus,
         images: {

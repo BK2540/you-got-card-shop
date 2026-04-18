@@ -1,10 +1,10 @@
 "use client";
 
 import CardItem from "@/components/CardItem";
+import { useCart } from "@/hooks/useCart";
 import { getCards } from "@/lib/api/cards";
 import { Card } from "@/types";
 import Image from "next/image";
-import Link from "next/link";
 import { use, useEffect, useRef, useState } from "react";
 
 export default function CardDetail({
@@ -24,6 +24,8 @@ export default function CardDetail({
   const heroImage =
     card?.images.find((image) => image.isHero)?.url ?? card?.image ?? "";
   const selectedImage = card ? (selectedImages[card.id] ?? heroImage) : "";
+
+  const { addToCart } = useCart();
 
   useEffect(() => {
     let mounted = true;
@@ -138,7 +140,8 @@ export default function CardDetail({
         <div className="flex-1 flex flex-col gap-6">
           {/* title */}
           <div>
-            <h1 className="text-3xl lg:text-5xl font-bold">{card.name}</h1>
+            <h1 className="text-3xl lg:text-5xl font-bold">{card.playerName}</h1>
+            <p className="mt-1 text-base text-gray-300">{card.name}</p>
           </div>
 
           {/* price */}
@@ -151,7 +154,11 @@ export default function CardDetail({
                 BUY IT NOW
               </button>
 
-              <button className="flex-1 bg-white/10 border border-white/10 py-3 rounded-xl hover:bg-white/20 transition">
+              <button
+                className="flex-1 bg-white/10 border border-white/10 py-3 rounded-xl hover:bg-white/20 transition"
+                onClick={() => addToCart(card, 1)}
+                disabled={card.status !== "ACTIVE" || card.quantity < 1}
+              >
                 ADD TO CART
               </button>
             </div>
@@ -176,7 +183,13 @@ export default function CardDetail({
 
             <div>
               <p className="text-gray-500">TYPE</p>
-              <p>Gold Prizm</p>
+              <p>
+                {card.isRecommended
+                  ? "Recommended"
+                  : card.isNewArrival
+                    ? "New Arrival"
+                    : "Standard"}
+              </p>
             </div>
           </div>
         </div>

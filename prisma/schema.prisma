@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -18,48 +13,61 @@ enum CardStatus {
   OUT_OF_STOCK
 }
 
-model Card {
-  id        String   @id @default(uuid())
-  name      String
-  team      String
-  price     Float
-  grade     String
-  year      Int
-  createdAt DateTime @default(now())
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+}
 
-  quantity    Int      @default(0)        
-  description String   @default("")      
-  status      CardStatus @default(ACTIVE)
+model Card {
+  id            String     @id @default(uuid())
+  name          String
+  playerName    String
+  team          String
+  price         Float
+  grade         String
+  year          Int
+  quantity      Int        @default(0)
+  isRecommended Boolean    @default(false)
+  description   String     @default("")
+  status        CardStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
 
   images     CardImage[]
   featuredIn HomeContent[]
+  orderItems OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([name])
+  @@index([playerName])
+  @@index([isRecommended])
 }
 
 model CardImage {
-  id     String  @id @default(uuid())
-  url    String
-  isHero Boolean @default(false)
-
-  cardId String
-  card   Card   @relation(fields: [cardId], references: [id])
-}
-
-model Order {
   id        String   @id @default(uuid())
-  total     Float
-  status    String // PENDING, PAID
+  url       String
+  isHero    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id])
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
 }
 
 model Customer {
-  id    String @id @default(uuid())
-  name  String
-  email String
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   orders Order[]
+
+  @@index([name])
 }
 
 model HomeContent {
@@ -68,8 +76,45 @@ model HomeContent {
   subtitle    String
   description String
   price       Float
-  featuredId  String? // relation to Card
+  featuredId  String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   featured Card? @relation(fields: [featuredId], references: [id])
+
+  @@index([featuredId])
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  total           Float
+  status          OrderStatus @default(PENDING)
+  stripeSessionId String?     @unique
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @default(now()) @updatedAt
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  items OrderItem[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  quantity  Int
+  unitPrice Float
+  createdAt DateTime @default(now())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([cardId])
 }

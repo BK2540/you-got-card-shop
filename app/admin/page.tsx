@@ -1,7 +1,7 @@
 "use client";
 
 import { useAdminPortal } from "@/context/AdminPortalContext";
-import { getCards } from "@/lib/api/cards";
+import { getAdminCards } from "@/lib/api/cards";
 import { getCustomers } from "@/lib/api/customers";
 import { getOrders } from "@/lib/api/orders";
 import { Card } from "@/types";
@@ -54,9 +54,16 @@ export default function AdminPage() {
   });
 
   const fetchCards = useCallback(async () => {
-    const data = await getCards();
-    setCards(data);
-    return data;
+    const response = await getAdminCards({
+      page: 1,
+      pageSize: 200,
+      status: "ALL",
+      recommendation: "ALL",
+      sortBy: "createdAt",
+      sortDirection: "desc",
+    });
+    setCards(response.items);
+    return response.items;
   }, []);
 
   useEffect(() => {

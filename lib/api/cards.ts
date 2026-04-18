@@ -1,14 +1,48 @@
 // lib/api/cards.ts
 
 import {
+  Card,
   CardStatus,
   InventoryCardSortDirection,
   InventoryCardSortField,
   PaginatedCardsResponse,
 } from "@/types";
 
-export async function getCards() {
-  const res = await fetch("http://localhost:3000/api/cards", {
+type GetCardsOptions = {
+  search?: string;
+  team?: string;
+  year?: string;
+  grade?: string;
+  playerName?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  section?: "all" | "recommended" | "new-arrival";
+  limit?: number;
+};
+
+export async function getCards(options: GetCardsOptions = {}): Promise<Card[]> {
+  const params = new URLSearchParams();
+
+  if (options.search) params.set("search", options.search);
+  if (options.team) params.set("team", options.team);
+  if (options.year) params.set("year", options.year);
+  if (options.grade) params.set("grade", options.grade);
+  if (options.playerName) params.set("playerName", options.playerName);
+  if (options.minPrice) params.set("minPrice", options.minPrice);
+  if (options.maxPrice) params.set("maxPrice", options.maxPrice);
+  if (options.section && options.section !== "all") {
+    params.set("section", options.section);
+  }
+  if (options.limit && options.limit > 0) {
+    params.set("limit", String(options.limit));
+  }
+
+  const queryString = params.toString();
+  const endpoint = queryString
+    ? `http://localhost:3000/api/cards?${queryString}`
+    : "http://localhost:3000/api/cards";
+
+  const res = await fetch(endpoint, {
     cache: "no-store",
   });
 
@@ -16,7 +50,7 @@ export async function getCards() {
     throw new Error("Failed to fetch cards");
   }
 
-  return res.json();
+  return (await res.json()) as Card[];
 }
 
 type GetAdminCardsOptions = {
@@ -24,6 +58,7 @@ type GetAdminCardsOptions = {
   pageSize?: number;
   search?: string;
   status?: CardStatus | "ALL";
+  recommendation?: "ALL" | "RECOMMENDED" | "NOT_RECOMMENDED";
   sortBy?: InventoryCardSortField;
   sortDirection?: InventoryCardSortDirection;
 };
@@ -35,6 +70,7 @@ export async function getAdminCards(options: GetAdminCardsOptions = {}) {
     pageSize: String(options.pageSize ?? 6),
     search: options.search ?? "",
     status: options.status ?? "ALL",
+    recommendation: options.recommendation ?? "ALL",
     sortBy: options.sortBy ?? "createdAt",
     sortDirection: options.sortDirection ?? "desc",
   });
