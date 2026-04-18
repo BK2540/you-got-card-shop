@@ -5,6 +5,10 @@ export type CardImage = {
   isHero: boolean;
 };
 
+export type CardStatus =  "ACTIVE" |
+  "INACTIVE" |
+  "OUT_OF_STOCK"
+
 export type Card = {
   id: string;
   name: string;
@@ -14,6 +18,31 @@ export type Card = {
   images: CardImage[];
   grade: string;
   year: number;
+  quantity: number;
+  description: string;
+  status: CardStatus;
+};
+
+export type InventoryCardSortField =
+  | "createdAt"
+  | "name"
+  | "price"
+  | "quantity"
+  | "year"
+  | "status";
+
+export type InventoryCardSortDirection = "asc" | "desc";
+
+export type PaginatedCardsResponse = {
+  items: Card[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  sortBy: InventoryCardSortField;
+  sortDirection: InventoryCardSortDirection;
+  search: string;
+  status: CardStatus | "ALL";
 };
 
 

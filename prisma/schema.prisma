@@ -12,6 +12,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum CardStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+}
+
 model Card {
   id        String   @id @default(uuid())
   name      String
@@ -20,6 +26,10 @@ model Card {
   grade     String
   year      Int
   createdAt DateTime @default(now())
+
+  quantity    Int      @default(0)        
+  description String   @default("")      
+  status      CardStatus @default(ACTIVE)
 
   images     CardImage[]
   featuredIn HomeContent[]

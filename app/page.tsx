@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import basketballImage from "@/public/images.png";
+import basketballImage from "@/public/kobe-card.png";
 import CustomButton from "@/components/CustomButton";
 import { useEffect, useRef, useState } from "react";
 import { getCards } from "@/lib/api/cards";
@@ -85,7 +85,7 @@ export default function Home() {
           {/* title */}
           <h1 className="text-5xl lg:text-7xl font-extrabold leading-tight">
             <span className="text-white">ZION</span> <br />
-            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent">
               WILLIAMSON
             </span>
           </h1>
@@ -127,7 +127,7 @@ export default function Home() {
         </div>
 
         {/* 🔥 RIGHT CARD PREVIEW */}
-        <div className="flex-1 flex justify-center items-center relative">
+        <div className="flex-1 flex justify-center items-center relative mt-12">
           {/* shadow */}
           <div className="absolute w-[300px] h-[400px] bg-black/50 blur-3xl translate-x-6 translate-y-10 rounded-3xl" />
 

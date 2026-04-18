@@ -18,18 +18,18 @@ export default function PageBackground({ children }: { children: ReactNode }) {
           alt="bg"
           width={740}
           // height={700}
-          className="opacity-40 blur-[50px]"
+          className="opacity-40 blur-[20px]"
         />
       </div>
 
       {/* 🔥 HORIZONTAL LIGHT BANDS */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="h-full w-full bg-[repeating-linear-gradient(to_bottom,rgba(255,120,0,0.25)_0px,rgba(255,120,0,0.25)_6px,transparent_6px,transparent_40px)] blur-[10px]" />
+        {/* <div className="h-full w-full bg-[repeating-linear-gradient(to_bottom,rgba(252,134,0,0.25)_0px,rgba(252,134,0,0.25)_6px,transparent_6px,transparent_30px)] blur-[10px]" /> */}
       </div>
 
       {/* 🎞 GRAIN / NOISE OVERLAY */}
       <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <div className="w-full h-full bg-[radial-gradient(rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:3px_3px]" />
+        <div className="w-full h-full bg-[radial-gradient(rgba(255,255,255,0.2)_0.5px,transparent_1px)] bg-[size:2px_2px]" />
       </div>
 
       {/* CONTENT */}

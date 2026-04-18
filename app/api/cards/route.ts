@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { CardStatus, Prisma } from "@prisma/client";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -79,15 +80,81 @@ const saveUploadedImages = async (files: File[]) => {
 };
 
 // GET all cards
-export async function GET() {
-  const cards = await prisma.card.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      images: true,
-    },
-  });
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const view = searchParams.get("view");
 
-  return NextResponse.json(cards.map(formatCard));
+  if (view !== "admin") {
+    const cards = await prisma.card.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        images: true,
+      },
+    });
+
+    return NextResponse.json(cards.map(formatCard));
+  }
+
+  const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
+  const pageSize = Math.min(
+    20,
+    Math.max(1, Number(searchParams.get("pageSize") ?? "6")),
+  );
+  const search = searchParams.get("search")?.trim() ?? "";
+  const status = searchParams.get("status") ?? "ALL";
+  const sortBy = searchParams.get("sortBy") ?? "createdAt";
+  const sortDirection =
+    searchParams.get("sortDirection") === "asc" ? "asc" : "desc";
+
+  const where: Prisma.CardWhereInput = {
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search } },
+            { team: { contains: search } },
+            { grade: { contains: search } },
+          ],
+        }
+      : {}),
+    ...(status !== "ALL" && Object.values(CardStatus).includes(status as CardStatus)
+      ? { status: status as CardStatus }
+      : {}),
+  };
+
+  const sortableFields = new Set([
+    "createdAt",
+    "name",
+    "price",
+    "quantity",
+    "year",
+    "status",
+  ]);
+  const normalizedSortBy = sortableFields.has(sortBy) ? sortBy : "createdAt";
+
+  const [cards, totalCount] = await Promise.all([
+    prisma.card.findMany({
+      where,
+      orderBy: { [normalizedSortBy]: sortDirection },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        images: true,
+      },
+    }),
+    prisma.card.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    items: cards.map(formatCard),
+    page,
+    pageSize,
+    totalCount,
+    totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+    sortBy: normalizedSortBy,
+    sortDirection,
+    search,
+    status,
+  });
 }
 
 // CREATE card
@@ -99,13 +166,32 @@ export async function POST(req: Request) {
     const grade = formData.get("grade")?.toString().trim() ?? "";
     const price = Number(formData.get("price"));
     const year = Number(formData.get("year"));
+    const quantity = Number(formData.get("quantity"));
+    const description = formData.get("description")?.toString() ?? "";
+    const status = (formData.get("status")?.toString() ?? "ACTIVE") as CardStatus;
+    const normalizedStatus =
+      quantity === 0 ? CardStatus.OUT_OF_STOCK : status;
     const files = formData
       .getAll("images")
       .filter((value): value is File => value instanceof File && value.size > 0);
 
-    if (!name || !team || !grade || Number.isNaN(price) || Number.isNaN(year)) {
+    if (
+      !name ||
+      !team ||
+      !grade ||
+      Number.isNaN(price) ||
+      Number.isNaN(year) ||
+      Number.isNaN(quantity)
+    ) {
       return NextResponse.json(
         { error: "All card fields are required" },
+        { status: 400 },
+      );
+    }
+
+    if (!Object.values(CardStatus).includes(normalizedStatus)) {
+      return NextResponse.json(
+        { error: "Invalid card status" },
         { status: 400 },
       );
     }
@@ -146,6 +232,9 @@ export async function POST(req: Request) {
         price,
         grade,
         year,
+        quantity,
+        description,
+        status: normalizedStatus,
         images: {
           create: images,
         },

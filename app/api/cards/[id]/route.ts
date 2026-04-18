@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { CardStatus } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -100,14 +101,33 @@ export async function PUT(
     const grade = formData.get("grade")?.toString().trim() ?? "";
     const price = Number(formData.get("price"));
     const year = Number(formData.get("year"));
+    const quantity = Number(formData.get("quantity"));
+    const description = formData.get("description")?.toString() ?? "";
+    const status = (formData.get("status")?.toString() ?? "ACTIVE") as CardStatus;
+    const normalizedStatus =
+      quantity === 0 ? CardStatus.OUT_OF_STOCK : status;
     const files = formData
       .getAll("images")
       .filter((f): f is File => f instanceof File && f.size > 0);
     const imageOrder = resolveImageOrder(formData);
 
-    if (!name || !team || !grade || Number.isNaN(price) || Number.isNaN(year)) {
+    if (
+      !name ||
+      !team ||
+      !grade ||
+      Number.isNaN(price) ||
+      Number.isNaN(year) ||
+      Number.isNaN(quantity)
+    ) {
       return NextResponse.json(
         { error: "All card fields are required" },
+        { status: 400 },
+      );
+    }
+
+    if (!Object.values(CardStatus).includes(normalizedStatus)) {
+      return NextResponse.json(
+        { error: "Invalid card status" },
         { status: 400 },
       );
     }
@@ -174,6 +194,9 @@ export async function PUT(
         price,
         grade,
         year,
+        quantity,
+        description,
+        status: normalizedStatus,
         images: {
           create: finalImages,
         },
