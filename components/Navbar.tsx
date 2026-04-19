@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
+import LocalGroceryStoreOutlinedIcon from "@mui/icons-material/LocalGroceryStoreOutlined";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -75,18 +76,6 @@ const Navbar = () => {
         </div>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <Link
-            href="/cart"
-            className="relative rounded-full border border-white/10 px-4 py-2 text-sm text-gray-200 transition hover:bg-white/10 hover:text-white"
-          >
-            Cart
-            {itemCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex min-w-5 justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-white">
-                {itemCount}
-              </span>
-            )}
-          </Link>
-
           {!isAuthenticated ? (
             <>
               <Link
@@ -97,13 +86,30 @@ const Navbar = () => {
               </Link>
               <Link
                 href="/signup"
-                className="rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                className="rounded-full bg-linear-to-r from-orange-500 to-orange-600 px-5 py-2 text-sm font-semibold text-white transition hover:brightness-110"
               >
                 Sign up
               </Link>
             </>
           ) : (
-            <div className="relative">
+            <div className="relative flex gap-4 items-center ">
+              <Link
+                href="/cart"
+                // className="relative rounded-full border border-white/10 px-4 py-2 text-sm text-gray-200 transition hover:bg-white/10 hover:text-white"
+                className={`relative rounded-full px-4 py-1 text-sm transition min-h-12 flex items-center ${
+                  pathname === "/cart"
+                    ? "bg-primary text-white"
+                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <LocalGroceryStoreOutlinedIcon />
+                {itemCount > 0 && (
+                  <span className="absolute -right-1 -top-1 inline-flex min-w-5 justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-white">
+                    {itemCount}
+                  </span>
+                )}
+              </Link>
+
               <button
                 type="button"
                 onClick={() => setOpenProfileMenu((prev) => !prev)}
@@ -132,10 +138,19 @@ const Navbar = () => {
                   >
                     Profile
                   </Link>
+                  {user?.role === "admin" && (
+                    <Link
+                      href="/admin"
+                      onClick={closeMenus}
+                      className="block w-full px-4 py-3 text-left text-sm text-gray-100 transition hover:bg-white/10"
+                    >
+                      Admin
+                    </Link>
+                  )}
                   <button
                     type="button"
-                    onClick={() => {
-                      signOut();
+                    onClick={async () => {
+                      await signOut();
                       closeMenus();
                       router.push("/");
                     }}
@@ -217,8 +232,8 @@ const Navbar = () => {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => {
-                    signOut();
+                  onClick={async () => {
+                    await signOut();
                     closeMenus();
                     router.push("/");
                   }}

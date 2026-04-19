@@ -1,7 +1,9 @@
+import Alert from "@mui/material/Alert";
+import Snackbar from "@mui/material/Snackbar";
 import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
 import type { Card } from "@/types";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, FormEvent, SyntheticEvent } from "react";
 
 type HomeFormState = {
   id?: string;
@@ -12,13 +14,23 @@ type HomeFormState = {
   featuredId: string;
 };
 
+type FormStatus = {
+  type: "success" | "error";
+  message: string;
+} | null;
+
 type HomeContentFormProps = {
   cards: Card[];
   form: HomeFormState;
   loading?: boolean;
+  submitDisabled?: boolean;
+  status?: FormStatus;
+  onStatusClose?: () => void;
   onChange: (
     field: keyof HomeFormState,
-  ) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  ) => (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
 };
 
@@ -26,14 +38,30 @@ const HomeContentForm = ({
   cards,
   form,
   loading = false,
+  submitDisabled = false,
+  status = null,
+  onStatusClose,
   onChange,
   onSubmit,
 }: HomeContentFormProps) => {
+  const handleStatusClose = (
+    _event?: Event | SyntheticEvent,
+    reason?: string,
+  ) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    onStatusClose?.();
+  };
+
   return (
     <main className="flex-1 space-y-10 p-8">
       <h1 className="text-2xl font-bold text-orange-500">Home Content</h1>
 
-      <form onSubmit={onSubmit} className="space-y-4 rounded-3xl bg-surface p-6 shadow-xl">
+      <form
+        onSubmit={onSubmit}
+        className="space-y-4 rounded-3xl bg-surface p-6 shadow-xl"
+      >
         <CustomInput
           placeholder="Title"
           value={form.title}
@@ -76,10 +104,36 @@ const HomeContentForm = ({
           ))}
         </select>
 
+        <Snackbar
+          open={Boolean(status)}
+          autoHideDuration={6000}
+          onClose={handleStatusClose}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <Alert
+            onClose={handleStatusClose}
+            severity={status?.type ?? "success"}
+            variant="outlined"
+            sx={{ width: "100%" }}
+          >
+            {status?.message ?? ""}
+          </Alert>
+        </Snackbar>
+
+        {loading && (
+          <p className="text-sm text-white/70">Saving home content...</p>
+        )}
+
         <CustomButton
-          title={loading ? "Saving..." : "Save"}
+          title={
+            loading
+              ? "Saving..."
+              : submitDisabled
+                ? "No changes to save"
+                : "Save"
+          }
           type="submit"
-          disable={loading}
+          disable={loading || submitDisabled}
         />
       </form>
     </main>

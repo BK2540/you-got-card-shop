@@ -6,15 +6,15 @@ import { useEffect } from "react";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, isLoading, signOut } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.replace("/signin");
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
 
-  if (!isAuthenticated) {
+  if (isLoading || !isAuthenticated) {
     return <main className="px-6 py-10">Redirecting...</main>;
   }
 
@@ -43,8 +43,8 @@ export default function ProfilePage() {
 
         <button
           type="button"
-          onClick={() => {
-            signOut();
+          onClick={async () => {
+            await signOut();
             router.push("/");
           }}
           className="mt-6 rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-2.5 text-sm font-medium text-red-300"

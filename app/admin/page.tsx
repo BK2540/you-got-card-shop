@@ -36,7 +36,19 @@ type HomeFormState = {
   featuredId: string;
 };
 
+type HomeSubmitStatus = {
+  type: "success" | "error";
+  message: string;
+} | null;
+
 const MAX_IMAGE_COUNT = 10;
+const EMPTY_HOME_FORM: HomeFormState = {
+  title: "",
+  subtitle: "",
+  description: "",
+  price: "",
+  featuredId: "",
+};
 
 export default function AdminPage() {
   const { tab } = useAdminPortal();
@@ -44,14 +56,11 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [homeLoading, setHomeLoading] = useState(false);
+  const [homeSubmitStatus, setHomeSubmitStatus] = useState<HomeSubmitStatus>(null);
 
-  const [homeForm, setHomeForm] = useState<HomeFormState>({
-    title: "",
-    subtitle: "",
-    description: "",
-    price: "",
-    featuredId: "",
-  });
+  const [homeForm, setHomeForm] = useState<HomeFormState>(EMPTY_HOME_FORM);
+  const [initialHomeForm, setInitialHomeForm] =
+    useState<HomeFormState>(EMPTY_HOME_FORM);
 
   const fetchCards = useCallback(async () => {
     const response = await getAdminCards({
@@ -93,15 +102,24 @@ export default function AdminPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data) {
-          setHomeForm({
+          const nextFormState = {
             id: data.id,
             title: data.title ?? "",
             subtitle: data.subtitle ?? "",
             description: data.description ?? "",
             price: data.price ? String(data.price) : "",
             featuredId: data.featuredId ?? "",
-          });
+          };
+
+          setHomeForm(nextFormState);
+          setInitialHomeForm(nextFormState);
+          setHomeSubmitStatus(null);
+          return;
         }
+
+        setHomeForm(EMPTY_HOME_FORM);
+        setInitialHomeForm(EMPTY_HOME_FORM);
+        setHomeSubmitStatus(null);
       });
   }, [tab]);
 
@@ -112,6 +130,7 @@ export default function AdminPage() {
         HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
       >,
     ) => {
+      setHomeSubmitStatus(null);
       setHomeForm((current) => ({
         ...current,
         [field]:
@@ -121,12 +140,24 @@ export default function AdminPage() {
       }));
     };
 
+  const isHomeFormDirty =
+    homeForm.title !== initialHomeForm.title ||
+    homeForm.subtitle !== initialHomeForm.subtitle ||
+    homeForm.description !== initialHomeForm.description ||
+    homeForm.price !== initialHomeForm.price ||
+    homeForm.featuredId !== initialHomeForm.featuredId;
+
   const handleHomeContentSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!isHomeFormDirty || homeLoading) {
+      return;
+    }
+
     setHomeLoading(true);
 
     try {
-      await fetch("/api/home", {
+      const res = await fetch("/api/home", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -135,6 +166,51 @@ export default function AdminPage() {
           ...homeForm,
           price: Number(homeForm.price || 0),
         }),
+      });
+
+      if (!res.ok) {
+        let errorMessage = "Failed to save home content.";
+        try {
+          const payload = (await res.json()) as { error?: string };
+          if (payload?.error) {
+            errorMessage = payload.error;
+          }
+        } catch {
+          // Keep generic error message if response is not JSON.
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const saved = (await res.json()) as {
+        id: string;
+        title?: string;
+        subtitle?: string;
+        description?: string;
+        price?: number;
+        featuredId?: string | null;
+      };
+
+      const savedFormState: HomeFormState = {
+        id: saved.id,
+        title: saved.title ?? homeForm.title,
+        subtitle: saved.subtitle ?? homeForm.subtitle,
+        description: saved.description ?? homeForm.description,
+        price: saved.price !== undefined ? String(saved.price) : homeForm.price,
+        featuredId: saved.featuredId ?? "",
+      };
+
+      setHomeForm(savedFormState);
+      setInitialHomeForm(savedFormState);
+      setHomeSubmitStatus({
+        type: "success",
+        message: "Home content saved successfully.",
+      });
+    } catch (error) {
+      setHomeSubmitStatus({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to save home content.",
       });
     } finally {
       setHomeLoading(false);
@@ -157,6 +233,9 @@ export default function AdminPage() {
         cards={cards}
         form={homeForm}
         loading={homeLoading}
+        submitDisabled={!isHomeFormDirty}
+        status={homeSubmitStatus}
+        onStatusClose={() => setHomeSubmitStatus(null)}
         onChange={handleHomeFormChange}
         onSubmit={handleHomeContentSubmit}
       />

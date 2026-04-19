@@ -5,6 +5,9 @@ import LocalGroceryStoreOutlinedIcon from "@mui/icons-material/LocalGroceryStore
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import { AdminTab } from "@/types";
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 type AdminSidebarProps = {
   tab: AdminTab;
@@ -12,6 +15,8 @@ type AdminSidebarProps = {
 };
 
 const AdminSidebar = ({ tab, onTabChange }: AdminSidebarProps) => {
+  const { signOut } = useAuth();
+  const router = useRouter();
   const itemClassName = (isActive: boolean) =>
     `flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition w-full ${
       isActive ? "bg-primary text-white" : "text-white hover:bg-primary/50"
@@ -70,18 +75,23 @@ const AdminSidebar = ({ tab, onTabChange }: AdminSidebarProps) => {
       </div>
 
       <div className="mb-10 flex flex-col gap-4">
-        <button
-          type="button"
-          className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition w-full"
-          onClick={() => {}}
-        >
-          <PersonOutlinedIcon />
-          Back to shop
-        </button>
+        <Link href={"/"}>
+          <button
+            type="button"
+            className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition w-full"
+          >
+            <PersonOutlinedIcon />
+            Back to shop
+          </button>
+        </Link>
+
         <button
           type="button"
           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition w-full "
-          onClick={() => {}}
+          onClick={async () => {
+            await signOut();
+            router.push("/");
+          }}
         >
           <PersonOutlinedIcon />
           Sign Out

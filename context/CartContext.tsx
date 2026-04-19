@@ -32,6 +32,8 @@
 
 import { createContext, useEffect, useMemo, useState } from "react";
 import type { Card, CartItem } from "@/types";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 type CartContextValue = {
   items: CartItem[];
@@ -45,26 +47,60 @@ type CartContextValue = {
 
 export const CartContext = createContext<CartContextValue | null>(null);
 
-const STORAGE_KEY = "vault-cart";
+const STORAGE_KEY_PREFIX = "vault-cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  const storageKey = user ? `${STORAGE_KEY_PREFIX}:${user.id}` : null;
 
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setItems(JSON.parse(raw));
-      } catch {}
+    if (isLoading) {
+      return;
     }
-  }, []);
+
+    if (!storageKey) {
+      setItems([]);
+      setLoadedStorageKey(null);
+      return;
+    }
+
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) {
+      setItems([]);
+      setLoadedStorageKey(storageKey);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as CartItem[];
+      setItems(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoadedStorageKey(storageKey);
+    }
+  }, [isLoading, storageKey]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    if (!storageKey || loadedStorageKey !== storageKey) {
+      return;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(items));
+  }, [items, loadedStorageKey, storageKey]);
 
   const addToCart = (card: Card, qty = 1) => {
+    if (!isAuthenticated) {
+      const next = pathname || "/";
+      router.push(`/signin?next=${encodeURIComponent(next)}`);
+      return;
+    }
+
     setItems((prev) => {
       const found = prev.find((item) => item.cardId === card.id);
       if (found) {

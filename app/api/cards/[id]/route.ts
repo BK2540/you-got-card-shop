@@ -4,6 +4,7 @@ import { CardStatus } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { getAuthFromRequest } from "@/lib/auth-server";
 
 type CardWithImages = {
   id: string;
@@ -80,9 +81,14 @@ const saveUploadedImage = async (file: File) => {
 
 // DELETE
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = getAuthFromRequest(req);
+  if (!auth || auth.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
 
   await prisma.card.delete({
@@ -97,6 +103,11 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = getAuthFromRequest(req);
+  if (!auth || auth.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
     const formData = await req.formData();

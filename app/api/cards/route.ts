@@ -4,6 +4,7 @@ import { CardStatus, Prisma } from "@prisma/client";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { getAuthFromRequest } from "@/lib/auth-server";
 
 type CardWithImages = {
   id: string;
@@ -169,6 +170,11 @@ export async function GET(req: Request) {
     return NextResponse.json(formattedCards);
   }
 
+  const auth = getAuthFromRequest(req);
+  if (!auth || auth.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const pageSize = Math.min(
     20,
@@ -243,6 +249,11 @@ export async function GET(req: Request) {
 
 // CREATE card
 export async function POST(req: Request) {
+  const auth = getAuthFromRequest(req);
+  if (!auth || auth.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
     const name = formData.get("name")?.toString().trim() ?? "";

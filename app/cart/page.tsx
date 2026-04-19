@@ -63,7 +63,7 @@ export default function CartPage() {
           </div>
 
           <button
-            onClick={() => router.push("/checkout")}
+            onClick={() => router.push("/payment")}
             disabled={items.length === 0}
             className="w-full rounded-xl bg-orange-500 py-3 font-semibold disabled:opacity-50"
           >

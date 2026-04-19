@@ -1,0 +1,16 @@
+[
+  {
+    "id": "d46934f1-8812-499f-8af2-47ff9c18cc7c",
+    "name": "Test",
+    "email": "email@email.com",
+    "role": "customer",
+    "passwordHash": "07480fb9e85b9396af06f006cf1c95024af2531c65fb505cfbd0add1e2f31573"
+  },
+  {
+    "id": "d6a18de6-dea0-44c2-b7ed-230c82e4a1d5",
+    "name": "Test2",
+    "email": "new@email.com",
+    "role": "customer",
+    "passwordHash": "07480fb9e85b9396af06f006cf1c95024af2531c65fb505cfbd0add1e2f31573"
+  }
+]

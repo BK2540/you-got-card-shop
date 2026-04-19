@@ -1,17 +1,37 @@
 "use client";
 
 import Image from "next/image";
-import basketballImage from "@/public/kobe-card.png";
+import basketballImage from "@/public/ball.png";
 import CustomButton from "@/components/CustomButton";
 import { useEffect, useRef, useState } from "react";
 import { getCards } from "@/lib/api/cards";
 import { Card } from "@/types";
 import CardItem from "@/components/CardItem";
+import { useCart } from "@/hooks/useCart";
+
+type HomeContentResponse = {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  price: number;
+  team: string;
+  featuredId?: string | null;
+  featured?: {
+    id: string;
+    name: string;
+    playerName: string;
+    image: string;
+    grade: string;
+  } | null;
+} | null;
 
 export default function Home() {
   const [cards, setCards] = useState<Card[]>([]);
+  const [homeContent, setHomeContent] = useState<HomeContentResponse>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     let mounted = true;
@@ -19,6 +39,33 @@ export default function Home() {
     getCards().then((data) => {
       if (mounted) setCards(data);
     });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetch("/api/home", { cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch home content");
+        }
+
+        return res.json();
+      })
+      .then((data: HomeContentResponse) => {
+        if (mounted) {
+          setHomeContent(data);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setHomeContent(null);
+        }
+      });
 
     return () => {
       mounted = false;
@@ -69,95 +116,110 @@ export default function Home() {
     setActiveSlide((current) => (current + 1) % cards.length);
   };
 
+  const heroTitle = homeContent?.title?.trim() || "No data";
+  const heroSubtitle = homeContent?.subtitle?.trim() || "No data";
+  const heroDescription = homeContent?.description?.trim() || "No data";
+  const heroPrice = homeContent?.price ?? 482500;
+  const heroImage = homeContent?.featured?.image || basketballImage;
+  const featuredLabel = homeContent?.featured
+    ? `${homeContent.featured.playerName} ${homeContent.featured.name}`.toUpperCase()
+    : "ZION WILLIAMSON";
+  const heroGrade = homeContent?.featured?.grade || "No data";
+  const heroTeam = homeContent?.team || "No data";
+  const featuredCard =
+    cards.find((card) => card.id === homeContent?.featuredId) ??
+    cards.find((card) => card.id === homeContent?.featured?.id) ??
+    null;
+
   return (
     <section className="min-h-screen flex flex-col px-6 lg:px-16 py-12 gap-25">
       <section className="w-full h-full flex flex-col lg:flex-row items-center justify-between">
-        {/* 🔥 LEFT CONTENT */}
         <div className="flex-1 flex flex-col gap-6 text-center lg:text-left">
-          {/* badge */}
-          <div className="flex items-center gap-4 justify-center lg:justify-start">
+          {/* <div className="flex items-center gap-4 justify-center lg:justify-start">
             <span className="px-3 py-1 text-xs rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
               LEGENDARY DROP
             </span>
-            <span className="text-xs text-gray-400">BATCH #0824</span>
-          </div>
+          </div> */}
 
-          {/* title */}
           <h1 className="text-5xl lg:text-7xl font-extrabold leading-tight">
-            <span className="text-white">ZION</span> <br />
-            <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              WILLIAMSON
+            <span className="text-white">{heroTitle}</span> <br />
+            <span className="bg-linear-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent">
+              {heroSubtitle}
             </span>
           </h1>
 
-          {/* description */}
           <p className="text-gray-400 max-w-xl mx-auto lg:mx-0">
-            The 2019-20 Panini Prizm Gold rookie card remains the definitive
-            centerpiece for modern basketball collectors. Encased in archival
-            glass.
+            {heroDescription}
           </p>
 
-          {/* 🔥 INFO CARD */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl max-w-md mx-auto lg:mx-0">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500">RARITY LEVEL</p>
-                <p className="font-semibold text-white">Gold Prizm /10</p>
+                <p className="text-gray-500">PSA Grade</p>
+                <p className="font-semibold text-white">{heroGrade}</p>
               </div>
 
               <div>
-                <p className="text-gray-500">AUTHENTICATION</p>
-                <p className="font-semibold text-white">PSA 10 Gem Mint</p>
+                <p className="text-gray-500">TEAM</p>
+                <p className="font-semibold text-white">{heroTeam}</p>
               </div>
 
               <div className="col-span-2">
-                <p className="text-gray-500">CURRENT VALUATION</p>
+                <p className="text-gray-500">CURRENT PRICE</p>
                 <p className="text-2xl font-bold text-white">
-                  $482,500.00{" "}
-                  {/* <span className="text-green-400 text-sm ml-2">+12.4%</span> */}
+                  $
+                  {heroPrice.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* 🔥 BUTTONS */}
           <div className="flex gap-4 justify-center lg:justify-start">
-            <CustomButton title="Buy Now" onClick={() => {}} />
+            <CustomButton
+              title="Add to cart"
+              onClick={() => {
+                if (featuredCard) {
+                  addToCart(featuredCard, 1);
+                }
+              }}
+              disable={!featuredCard}
+            />
           </div>
         </div>
 
-        {/* 🔥 RIGHT CARD PREVIEW */}
         <div className="flex-1 flex justify-center items-center relative mt-12">
-          {/* shadow */}
-          <div className="absolute w-[300px] h-[400px] bg-black/50 blur-3xl translate-x-6 translate-y-10 rounded-3xl" />
+          <div className="absolute w-75 h-100 bg-black/50 blur-3xl translate-x-6 translate-y-10 rounded-3xl" />
 
-          {/* card */}
-          <div className="relative w-full max-w-[400px] h-[600px] rounded-3xl overflow-hidden bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl rotate-6 hover:rotate-0 transition duration-500">
-            {/* image */}
+          <div className="relative w-full max-w-100 h-150 rounded-3xl overflow-hidden bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl rotate-6 hover:rotate-0 transition duration-500">
             <Image
-              src={basketballImage}
-              alt="card"
-              className="w-full  object-cover"
+              src={heroImage}
+              alt={featuredLabel}
+              className="w-full object-cover"
               width={400}
               height={600}
             />
 
-            {/* overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 hologram-overlay"
+            />
 
-            {/* text */}
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
+
             <div className="absolute bottom-4 left-4">
               <p className="text-xs text-gray-300">FEATURED ASSET</p>
-              <p className="text-lg font-bold">ZION WILLIAMSON</p>
+              <p className="text-lg font-bold">{featuredLabel}</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* new arrive */}
       <section className="w-full h-full flex flex-col gap-12">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <p className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent text-5xl lg:text-[64px] font-bold">
+          <p className="bg-linear-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent text-5xl lg:text-[64px] font-bold">
             New Arrival
           </p>
 
@@ -169,7 +231,7 @@ export default function Home() {
                 className="h-11 w-11 rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10"
                 aria-label="Show previous card"
               >
-                ←
+                &lt;
               </button>
               <button
                 type="button"
@@ -177,13 +239,13 @@ export default function Home() {
                 className="h-11 w-11 rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10"
                 aria-label="Show next card"
               >
-                →
+                &gt;
               </button>
             </div>
           )}
         </div>
 
-        <div className="relative  flex justify-center">
+        <div className="relative flex justify-center">
           <div
             ref={carouselRef}
             className="flex snap-x snap-mandatory gap-4 overflow-x-hidden scroll-smooth"
