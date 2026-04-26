@@ -27,6 +27,8 @@ model Card {
   name          String
   playerName    String
   team          String
+  traderName    String?
+  printRun      String?
   price         Float
   grade         String
   year          Int

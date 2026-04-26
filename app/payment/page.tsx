@@ -62,6 +62,22 @@ function PaymentForm({ orderId, onPaid }: PaymentFormProps) {
     }
 
     if (result.paymentIntent?.status === "succeeded") {
+      const confirmRes = await fetch("/api/checkout/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          paymentIntentId: result.paymentIntent.id,
+        }),
+      });
+
+      const confirmPayload = (await confirmRes.json()) as { error?: string };
+      if (!confirmRes.ok) {
+        setError(confirmPayload.error ?? "Failed to finalize order");
+        setLoading(false);
+        return;
+      }
+
       onPaid();
       return;
     }

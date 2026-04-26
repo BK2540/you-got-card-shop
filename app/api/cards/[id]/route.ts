@@ -13,6 +13,8 @@ type CardWithImages = {
   name: string;
   playerName: string;
   team: string;
+  traderName?: string | null;
+  printRun?: string | null;
   price: number;
   grade: string;
   year: number;
@@ -118,6 +120,8 @@ export async function PUT(
     const name = formData.get("name")?.toString().trim() ?? "";
     const playerName = formData.get("playerName")?.toString().trim() ?? "";
     const team = formData.get("team")?.toString().trim() ?? "";
+    const traderName = formData.get("traderName")?.toString().trim() || null;
+    const printRun = formData.get("printRun")?.toString().trim() || null;
     const grade = formData.get("grade")?.toString().trim() ?? "";
     const price = Number(formData.get("price"));
     const year = Number(formData.get("year"));
@@ -247,6 +251,8 @@ export async function PUT(
         name,
         playerName,
         team,
+        traderName,
+        printRun,
         price,
         grade,
         year,

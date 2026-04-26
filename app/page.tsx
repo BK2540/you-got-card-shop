@@ -23,6 +23,7 @@ type HomeContentResponse = {
     playerName: string;
     image: string;
     grade: string;
+    printRun?: string | null;
   } | null;
 } | null;
 
@@ -32,6 +33,7 @@ export default function Home() {
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { addToCart } = useCart();
+  const heroPrintRun = homeContent?.featured?.printRun || "-";
 
   useEffect(() => {
     let mounted = true;
@@ -164,7 +166,12 @@ export default function Home() {
                 <p className="font-semibold text-white">{heroTeam}</p>
               </div>
 
-              <div className="col-span-2">
+              <div>
+                <p className="text-orange70">PRINT RUN</p>
+                <p className="font-semibold text-white">{heroPrintRun}</p>
+              </div>
+
+              <div>
                 <p className="text-orange70">CURRENT PRICE</p>
                 <p className="text-2xl font-bold text-white">
                   $

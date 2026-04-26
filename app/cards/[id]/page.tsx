@@ -199,6 +199,13 @@ export default function CardDetail({
                     : "Standard"}
               </p>
             </div>
+
+            <div>
+              <p className="text-orange70 text-base">PRINT RUN</p>
+              <p className="text-white text-xl font-bold">
+                {card.printRun || "N/A"}
+              </p>
+            </div>
           </div>
         </div>
       </div>

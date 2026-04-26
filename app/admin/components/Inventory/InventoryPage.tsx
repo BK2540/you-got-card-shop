@@ -48,6 +48,8 @@ type InventoryFormState = {
   name: string;
   playerName: string;
   team: string;
+  traderName: string;
+  printRun: string;
   quantity: string;
   status: CardStatus;
   price: string;
@@ -68,6 +70,8 @@ const defaultFormState: InventoryFormState = {
   name: "",
   playerName: "",
   team: "",
+  traderName: "",
+  printRun: "",
   price: "",
   grade: "",
   description: "",
@@ -229,6 +233,8 @@ const InventoryPage = ({
     formData.append("name", form.name);
     formData.append("playerName", form.playerName);
     formData.append("team", form.team);
+    formData.append("traderName", form.traderName);
+    formData.append("printRun", form.printRun);
     formData.append("price", String(Number(form.price || 0)));
     formData.append("grade", form.grade);
     formData.append("year", String(Number(form.year || 0)));
@@ -528,6 +534,20 @@ const InventoryPage = ({
                     value={form.team}
                     onChange={(e) => setForm({ ...form, team: e.target.value })}
                   />
+                  <CustomInput
+                    placeholder="Trader Name (optional)"
+                    value={form.traderName}
+                    onChange={(e) =>
+                      setForm({ ...form, traderName: e.target.value })
+                    }
+                  />
+                  <CustomInput
+                    placeholder="Print Run (e.g. /99)"
+                    value={form.printRun}
+                    onChange={(e) =>
+                      setForm({ ...form, printRun: e.target.value })
+                    }
+                  />
 
                   <CustomInput
                     type="text"
@@ -667,6 +687,20 @@ const InventoryPage = ({
                   placeholder="Team"
                   value={form.team}
                   onChange={(e) => setForm({ ...form, team: e.target.value })}
+                />
+                <CustomInput
+                  placeholder="Trader Name (optional)"
+                  value={form.traderName}
+                  onChange={(e) =>
+                    setForm({ ...form, traderName: e.target.value })
+                  }
+                />
+                <CustomInput
+                  placeholder="Print Run (e.g. /99)"
+                  value={form.printRun}
+                  onChange={(e) =>
+                    setForm({ ...form, printRun: e.target.value })
+                  }
                 />
 
                 <CustomInput
@@ -967,6 +1001,8 @@ const InventoryPage = ({
                                   name: card.name,
                                   playerName: card.playerName,
                                   team: card.team,
+                                  traderName: card.traderName ?? "",
+                                  printRun: card.printRun ?? "",
                                   price: String(card.price),
                                   grade: card.grade,
                                   year: String(card.year),

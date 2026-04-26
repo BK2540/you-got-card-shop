@@ -14,6 +14,8 @@ export type Card = {
   name: string;
   playerName: string;
   team: string;
+  traderName?: string | null;
+  printRun?: string | null;
   price: number;
   image: string;
   images: CardImage[];

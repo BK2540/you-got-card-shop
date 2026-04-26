@@ -19,5 +19,12 @@
     "email": "user@email.com",
     "role": "customer",
     "passwordHash": "ceb89efc99c42eaef811baaa7da63380deb0d9e717c81058df3731113ee80a8a"
+  },
+  {
+    "id": "d1777c28-4ac3-4eef-a529-3ec600d78197",
+    "name": "User2",
+    "email": "boongkee2101+user2@gmail.com",
+    "role": "customer",
+    "passwordHash": "07480fb9e85b9396af06f006cf1c95024af2531c65fb505cfbd0add1e2f31573"
   }
 ]
