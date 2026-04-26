@@ -16,10 +16,10 @@ const stripePromise = loadStripe(
 );
 
 type CheckoutInitResponse = {
-  clientSecret: string;
   orderId: string;
   amount: number;
   currency: string;
+  clientSecret: string;
 };
 
 type PaymentFormProps = {
@@ -72,7 +72,7 @@ function PaymentForm({ orderId, onPaid }: PaymentFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+      <div className="rounded-2xl">
         <PaymentElement />
       </div>
 
@@ -104,6 +104,7 @@ export default function PaymentPage() {
     null,
   );
   const [paid, setPaid] = useState(false);
+  const formatTHB = (value: number) => `THB ${value.toFixed(2)}`;
 
   const canStartPayment =
     items.length > 0 &&
@@ -248,14 +249,37 @@ export default function PaymentPage() {
 
         <aside className="rounded-2xl border border-white/10 bg-surface p-6 min-h-52.5">
           <h2 className="mb-4 text-xl font-bold">Order Summary</h2>
-          <div className="space-y-2 text-sm text-gray-300">
+          <div className="space-y-3 text-sm text-gray-300">
             <p>Items: {items.length}</p>
             <p>
               Total quantity:{" "}
               {items.reduce((sum, item) => sum + item.quantity, 0)}
             </p>
-            <p className="text-base font-semibold text-white">
-              Subtotal: THB {subtotal.toFixed(2)}
+            {items.length > 0 && (
+              <div className="max-h-64 space-y-2 overflow-auto rounded-xl border border-white/10 bg-black/20 p-3">
+                {items.map((item) => {
+                  const lineTotal = item.quantity * item.card.price;
+                  return (
+                    <div
+                      key={item.cardId}
+                      className="rounded-lg border border-white/10 bg-white/5 p-2"
+                    >
+                      <p className="text-sm font-semibold text-white">
+                        {item.card.name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Qty: {item.quantity} x {formatTHB(item.card.price)}
+                      </p>
+                      <p className="text-xs font-semibold text-orange-300">
+                        Item total: {formatTHB(lineTotal)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <p className="pt-1 text-base font-semibold text-white">
+              Subtotal: {formatTHB(subtotal)}
             </p>
           </div>
         </aside>

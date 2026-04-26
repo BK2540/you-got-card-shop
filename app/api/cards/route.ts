@@ -1,10 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { CardStatus, Prisma } from "@prisma/client";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
 import { getAuthFromRequest } from "@/lib/auth-server";
+import { uploadCardImage } from "@/lib/cloudinary";
 
 type CardWithImages = {
   id: string;
@@ -22,6 +20,7 @@ type CardWithImages = {
   images: {
     id: string;
     url: string;
+    publicId: string | null;
     isHero: boolean;
     cardId: string;
   }[];
@@ -32,8 +31,7 @@ type ImageOrderItem = {
   url?: string;
 };
 
-const uploadDir = path.join(process.cwd(), "public", "uploads", "cards");
-const NEW_ARRIVAL_LIMIT = 8;
+const NEW_ARRIVAL_DAYS = 7;
 
 const sortImagesWithHeroFirst = (images: CardWithImages["images"]) => {
   const heroImage = images.find((image) => image.isHero);
@@ -74,25 +72,6 @@ const resolveImageOrder = (formData: FormData) => {
   }
 };
 
-const saveUploadedImages = async (files: File[]) => {
-  await mkdir(uploadDir, { recursive: true });
-
-  return Promise.all(
-    files.map(async (file) => {
-      const extension = path.extname(file.name) || ".png";
-      const fileName = `${randomUUID()}${extension.toLowerCase()}`;
-      const filePath = path.join(uploadDir, fileName);
-      const fileBuffer = Buffer.from(await file.arrayBuffer());
-
-      await writeFile(filePath, fileBuffer);
-
-      return {
-        url: `/uploads/cards/${fileName}`,
-      };
-    }),
-  );
-};
-
 // GET all cards
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -107,6 +86,9 @@ export async function GET(req: Request) {
     const minPrice = toValidNumber(searchParams.get("minPrice"));
     const maxPrice = toValidNumber(searchParams.get("maxPrice"));
     const section = searchParams.get("section");
+    const newArrivalSince = new Date(
+      Date.now() - NEW_ARRIVAL_DAYS * 24 * 60 * 60 * 1000,
+    );
     const limitParam = Number(searchParams.get("limit") ?? "");
     const limit =
       Number.isFinite(limitParam) && limitParam > 0
@@ -138,23 +120,21 @@ export async function GET(req: Request) {
           }
         : {}),
       ...(section === "recommended" ? { isRecommended: true } : {}),
+      ...(section === "new-arrival" ? { createdAt: { gte: newArrivalSince } } : {}),
     };
 
     const cards = await prisma.card.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: section === "new-arrival" ? NEW_ARRIVAL_LIMIT : limit,
+      take: limit,
       include: {
         images: true,
       },
     });
 
-    const newArrivalCardIds = new Set(
-      cards.slice(0, NEW_ARRIVAL_LIMIT).map((card) => card.id),
-    );
     const formattedCards = cards.map((card) => ({
       ...formatCard(card),
-      isNewArrival: newArrivalCardIds.has(card.id),
+      isNewArrival: card.createdAt >= newArrivalSince,
     }));
 
     if (section === "recommended") {
@@ -164,7 +144,7 @@ export async function GET(req: Request) {
     }
 
     if (section === "new-arrival") {
-      return NextResponse.json(formattedCards.slice(0, NEW_ARRIVAL_LIMIT));
+      return NextResponse.json(formattedCards);
     }
 
     return NextResponse.json(formattedCards);
@@ -312,15 +292,28 @@ export async function POST(req: Request) {
     const imageOrder = resolveImageOrder(formData);
     const orderedFiles =
       imageOrder.length > 0
-        ? imageOrder
-            .filter((item) => item.type === "new")
-            .map((_, index) => files[index])
-            .filter((file): file is File => Boolean(file))
+        ? (() => {
+            let nextNewFileIndex = 0;
+            return imageOrder
+              .map((item) => {
+                if (item.type !== "new") {
+                  return null;
+                }
+
+                const file = files[nextNewFileIndex];
+                nextNewFileIndex += 1;
+                return file ?? null;
+              })
+              .filter((file): file is File => Boolean(file));
+          })()
         : files;
 
-    const uploadedImages = await saveUploadedImages(orderedFiles);
+    const uploadedImages = await Promise.all(
+      orderedFiles.map((file) => uploadCardImage(file)),
+    );
     const images = uploadedImages.map((image, index) => ({
-      ...image,
+      url: image.url,
+      publicId: image.publicId,
       isHero: index === 0,
     }));
 

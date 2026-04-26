@@ -2,8 +2,9 @@
 
 import { useAdminPortal } from "@/context/AdminPortalContext";
 import { getAdminCards } from "@/lib/api/cards";
-import { getCustomers } from "@/lib/api/customers";
+import { type CustomerListItem, getCustomers } from "@/lib/api/customers";
 import { getOrders } from "@/lib/api/orders";
+import type { OrderListItem } from "@/lib/api/orders";
 import { Card } from "@/types";
 import { type ChangeEvent, type FormEvent, useCallback, useEffect, useState } from "react";
 import Dashboard from "./components/Dashboard";
@@ -11,21 +12,6 @@ import InventoryPage from "./components/Inventory/InventoryPage";
 import OrdersTable from "./components/Orders/OrdersTable";
 import CustomersTable from "./components/Customers/CustomersTable";
 import HomeContentForm from "./components/Home/HomeContentForm";
-
-type Customer = {
-  id: string;
-  name: string;
-  email: string;
-};
-
-type Order = {
-  id: string;
-  total: number;
-  status: string;
-  customer?: {
-    name?: string;
-  };
-};
 
 type HomeFormState = {
   id?: string;
@@ -53,8 +39,8 @@ const EMPTY_HOME_FORM: HomeFormState = {
 export default function AdminPage() {
   const { tab } = useAdminPortal();
   const [cards, setCards] = useState<Card[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [orders, setOrders] = useState<OrderListItem[]>([]);
+  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [homeLoading, setHomeLoading] = useState(false);
   const [homeSubmitStatus, setHomeSubmitStatus] = useState<HomeSubmitStatus>(null);
 
@@ -75,17 +61,27 @@ export default function AdminPage() {
     return response.items;
   }, []);
 
+  const fetchOrders = useCallback(async () => {
+    const nextOrders = await getOrders();
+    setOrders(nextOrders);
+  }, []);
+
+  const fetchCustomers = useCallback(async () => {
+    const nextCustomers = await getCustomers();
+    setCustomers(nextCustomers);
+  }, []);
+
   useEffect(() => {
     if (tab === "orders" || tab === "dashboard") {
-      getOrders().then(setOrders);
+      fetchOrders();
     }
-  }, [tab]);
+  }, [fetchOrders, tab]);
 
   useEffect(() => {
     if (tab === "customers" || tab === "dashboard") {
-      getCustomers().then(setCustomers);
+      fetchCustomers();
     }
-  }, [tab]);
+  }, [fetchCustomers, tab]);
 
   useEffect(() => {
     if (tab === "home" || tab === "dashboard") {
@@ -247,7 +243,7 @@ export default function AdminPage() {
   }
 
   if (tab === "orders") {
-    return <OrdersTable orders={orders} />;
+    return <OrdersTable orders={orders} onOrderUpdated={fetchOrders} />;
   }
 
   if (tab === "customers") {

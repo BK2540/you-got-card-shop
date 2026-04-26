@@ -12,5 +12,12 @@
     "email": "new@email.com",
     "role": "customer",
     "passwordHash": "07480fb9e85b9396af06f006cf1c95024af2531c65fb505cfbd0add1e2f31573"
+  },
+  {
+    "id": "9a5c2e5c-a974-4414-8cc1-f804ddf87c4d",
+    "name": "User1",
+    "email": "user@email.com",
+    "role": "customer",
+    "passwordHash": "ceb89efc99c42eaef811baaa7da63380deb0d9e717c81058df3731113ee80a8a"
   }
 ]

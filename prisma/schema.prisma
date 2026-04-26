@@ -16,6 +16,8 @@ enum CardStatus {
 enum OrderStatus {
   PENDING
   PAID
+  IN_DELIVERY
+  COMPLETED
   FAILED
   CANCELED
 }
@@ -49,6 +51,7 @@ model Card {
 model CardImage {
   id        String   @id @default(uuid())
   url       String
+  publicId  String?
   isHero    Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -56,6 +59,7 @@ model CardImage {
   card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
   @@index([cardId])
+  @@index([publicId])
 }
 
 model Customer {
@@ -89,6 +93,7 @@ model Order {
   id              String      @id @default(uuid())
   total           Float
   status          OrderStatus @default(PENDING)
+  trackingNumber  String?
   stripeSessionId String?     @unique
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @default(now()) @updatedAt

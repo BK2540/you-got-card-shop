@@ -6,6 +6,7 @@ import { getCards } from "@/lib/api/cards";
 import { Card } from "@/types";
 import Image from "next/image";
 import { use, useEffect, useRef, useState } from "react";
+import CustomButton from "@/components/CustomButton";
 
 export default function CardDetail({
   params,
@@ -140,50 +141,57 @@ export default function CardDetail({
         <div className="flex-1 flex flex-col gap-6">
           {/* title */}
           <div>
-            <h1 className="text-3xl lg:text-5xl font-bold">{card.playerName}</h1>
+            <h1 className="text-3xl lg:text-5xl font-bold">
+              {card.playerName}
+            </h1>
             <p className="mt-1 text-base text-gray-300">{card.name}</p>
           </div>
 
           {/* price */}
           <div className="bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-xl">
-            <p className="text-gray-400 text-sm">CURRENT VALUE</p>
+            <p className="text-orange70 text-base">CURRENT VALUE</p>
             <p className="text-3xl font-bold">${card.price}</p>
 
             <div className="flex gap-3 mt-4">
-              <button className="flex-1 bg-linear-to-r from-orange-500 to-orange-600 py-3 rounded-xl font-semibold hover:scale-105 transition">
+              {/* <button className="flex-1 bg-linear-to-r from-orange-500 to-orange-600 py-3 rounded-xl font-semibold hover:scale-105 transition">
                 BUY IT NOW
-              </button>
+              </button> */}
 
-              <button
+              {/* <button
                 className="flex-1 bg-white/10 border border-white/10 py-3 rounded-xl hover:bg-white/20 transition"
                 onClick={() => addToCart(card, 1)}
                 disabled={card.status !== "ACTIVE" || card.quantity < 1}
               >
                 ADD TO CART
-              </button>
+              </button> */}
+              <CustomButton
+                title="Add to cart"
+                onClick={() => addToCart(card, 1)}
+                disable={card.status !== "ACTIVE" || card.quantity < 1}
+              />
             </div>
           </div>
 
           {/* specs */}
           <div className="text-sm grid grid-cols-2 gap-4">
             <div>
-              <p className="text-gray-500">TEAM</p>
-              <p>{card.team}</p>
+              <p className="text-orange70 text-base">TEAM</p>
+              <p className="text-white text-xl font-bold">{card.team}</p>
             </div>
 
             <div>
-              <p className="text-gray-500">GRADE</p>
-              <p>{card.grade}</p>
+              <p className="text-orange70 text-base">GRADE</p>
+              <p className="text-white text-xl font-bold">{card.grade}</p>
             </div>
 
             <div>
-              <p className="text-gray-500">YEAR</p>
-              <p>{card.year}</p>
+              <p className="text-orange70 text-base">YEAR</p>
+              <p className="text-white text-xl font-bold">{card.year}</p>
             </div>
 
             <div>
-              <p className="text-gray-500">TYPE</p>
-              <p>
+              <p className="text-orange70 text-base">TYPE</p>
+              <p className="text-white text-xl font-bold">
                 {card.isRecommended
                   ? "Recommended"
                   : card.isNewArrival

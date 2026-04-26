@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { CardStatus } from "@prisma/client";
-import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { getAuthFromRequest } from "@/lib/auth-server";
+import {
+  destroyImageByPublicId,
+  extractPublicIdFromUrl,
+  uploadCardImage,
+} from "@/lib/cloudinary";
 
 type CardWithImages = {
   id: string;
@@ -22,6 +24,7 @@ type CardWithImages = {
   images: {
     id: string;
     url: string;
+    publicId: string | null;
     isHero: boolean;
     cardId: string;
   }[];
@@ -31,8 +34,6 @@ type ImageOrderItem = {
   type: "existing" | "new";
   url?: string;
 };
-
-const uploadDir = path.join(process.cwd(), "public", "uploads", "cards");
 
 const sortImagesWithHeroFirst = (images: CardWithImages["images"]) => {
   const heroImage = images.find((image) => image.isHero);
@@ -66,19 +67,6 @@ const resolveImageOrder = (formData: FormData) => {
   }
 };
 
-const saveUploadedImage = async (file: File) => {
-  const ext = path.extname(file.name) || ".png";
-  const fileName = `${randomUUID()}${ext.toLowerCase()}`;
-  const filePath = path.join(uploadDir, fileName);
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  await writeFile(filePath, buffer);
-
-  return {
-    url: `/uploads/cards/${fileName}`,
-  };
-};
-
 // DELETE
 export async function DELETE(
   req: Request,
@@ -90,6 +78,21 @@ export async function DELETE(
   }
 
   const { id } = await params;
+  const existingImages = await prisma.cardImage.findMany({
+    where: { cardId: id },
+    select: {
+      url: true,
+      publicId: true,
+    },
+  });
+
+  const publicIds = existingImages
+    .map((image) => image.publicId || extractPublicIdFromUrl(image.url))
+    .filter((publicId): publicId is string => Boolean(publicId));
+
+  await Promise.allSettled(
+    publicIds.map((publicId) => destroyImageByPublicId(publicId)),
+  );
 
   await prisma.card.delete({
     where: { id },
@@ -129,6 +132,17 @@ export async function PUT(
       .getAll("images")
       .filter((f): f is File => f instanceof File && f.size > 0);
     const imageOrder = resolveImageOrder(formData);
+    const existingCard = await prisma.card.findUnique({
+      where: { id },
+      select: {
+        images: {
+          select: {
+            url: true,
+            publicId: true,
+          },
+        },
+      },
+    });
 
     if (
       !name ||
@@ -166,7 +180,9 @@ export async function PUT(
       );
     }
 
-    await mkdir(uploadDir, { recursive: true });
+    const existingPublicIdByUrl = new Map(
+      (existingCard?.images ?? []).map((image) => [image.url, image.publicId]),
+    );
 
     let nextNewFileIndex = 0;
     const orderedImages = await Promise.all(
@@ -174,6 +190,7 @@ export async function PUT(
         if (item.type === "existing" && item.url) {
           return {
             url: item.url,
+            publicId: existingPublicIdByUrl.get(item.url) ?? null,
           };
         }
 
@@ -184,12 +201,14 @@ export async function PUT(
           return null;
         }
 
-        return saveUploadedImage(file);
+        return uploadCardImage(file);
       }),
     );
 
     const finalImages = orderedImages
-      .filter((image): image is { url: string } => Boolean(image))
+      .filter((image): image is { url: string; publicId: string | null } =>
+        Boolean(image),
+      )
       .map((image, index) => ({
         ...image,
         isHero: index === 0,
@@ -201,6 +220,22 @@ export async function PUT(
         { status: 400 },
       );
     }
+
+    const nextPublicIdSet = new Set(
+      finalImages
+        .map((image) => image.publicId)
+        .filter((publicId): publicId is string => Boolean(publicId)),
+    );
+    const removedPublicIds = (existingCard?.images ?? [])
+      .map((image) => image.publicId || extractPublicIdFromUrl(image.url))
+      .filter(
+        (publicId): publicId is string =>
+          Boolean(publicId) && !nextPublicIdSet.has(publicId),
+      );
+
+    await Promise.allSettled(
+      removedPublicIds.map((publicId) => destroyImageByPublicId(publicId)),
+    );
 
     await prisma.cardImage.deleteMany({
       where: { cardId: id },

@@ -40,6 +40,7 @@ export default function CartPage() {
                 <input
                   type="number"
                   min={1}
+                  max={Math.max(1, item.card.quantity)}
                   value={item.quantity}
                   onChange={(e) =>
                     updateQty(item.cardId, Number(e.target.value))

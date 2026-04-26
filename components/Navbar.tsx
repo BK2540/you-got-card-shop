@@ -124,7 +124,7 @@ const Navbar = () => {
               </button>
 
               {openProfileMenu && (
-                <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-white/10 bg-surface shadow-2xl">
+                <div className="absolute right-0 top-14  w-56 overflow-hidden rounded-2xl border border-white/10 bg-surface shadow-2xl">
                   <div className="border-b border-white/10 px-4 py-3">
                     <p className="text-sm font-semibold text-white">
                       {user?.name}

@@ -36,7 +36,7 @@ export default function Home() {
   useEffect(() => {
     let mounted = true;
 
-    getCards().then((data) => {
+    getCards({ section: "new-arrival", limit: 8 }).then((data) => {
       if (mounted) setCards(data);
     });
 
@@ -143,29 +143,29 @@ export default function Home() {
 
           <h1 className="text-5xl lg:text-7xl font-extrabold leading-tight">
             <span className="text-white">{heroTitle}</span> <br />
-            <span className="bg-linear-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            <span className="bg-linear-to-b from-orange-300 via-orange-400 to-orange-700 bg-clip-text text-transparent">
               {heroSubtitle}
             </span>
           </h1>
 
-          <p className="text-gray-400 max-w-xl mx-auto lg:mx-0">
+          <p className="text-white max-w-xl mx-auto lg:mx-0">
             {heroDescription}
           </p>
 
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl max-w-md mx-auto lg:mx-0">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500">PSA Grade</p>
+                <p className="text-orange70">PSA Grade</p>
                 <p className="font-semibold text-white">{heroGrade}</p>
               </div>
 
               <div>
-                <p className="text-gray-500">TEAM</p>
+                <p className="text-orange70">TEAM</p>
                 <p className="font-semibold text-white">{heroTeam}</p>
               </div>
 
               <div className="col-span-2">
-                <p className="text-gray-500">CURRENT PRICE</p>
+                <p className="text-orange70">CURRENT PRICE</p>
                 <p className="text-2xl font-bold text-white">
                   $
                   {heroPrice.toLocaleString("en-US", {

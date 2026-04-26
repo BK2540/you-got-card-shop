@@ -27,18 +27,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
 
+    const groupedItems = new Map<string, number>();
+    for (const item of items) {
+      const normalizedQty = Number.isFinite(item.quantity)
+        ? Math.floor(item.quantity)
+        : 0;
+      if (!item.cardId || normalizedQty < 1) {
+        return NextResponse.json(
+          { error: "Invalid cart item quantity" },
+          { status: 400 },
+        );
+      }
+
+      groupedItems.set(
+        item.cardId,
+        (groupedItems.get(item.cardId) ?? 0) + normalizedQty,
+      );
+    }
+
+    const normalizedItems = Array.from(groupedItems.entries()).map(
+      ([cardId, quantity]) => ({
+        cardId,
+        quantity,
+      }),
+    );
+
     const cards = await prisma.card.findMany({
-      where: { id: { in: items.map((item) => item.cardId) } },
+      where: { id: { in: normalizedItems.map((item) => item.cardId) } },
     });
 
-    if (cards.length !== items.length) {
+    if (cards.length !== normalizedItems.length) {
       return NextResponse.json(
         { error: "Some cards are no longer available" },
         { status: 400 },
       );
     }
 
-    for (const item of items) {
+    for (const item of normalizedItems) {
       const card = cards.find((entry) => entry.id === item.cardId);
 
       if (!card) {
@@ -52,7 +77,7 @@ export async function POST(req: Request) {
         );
       }
 
-      if (item.quantity < 1 || item.quantity > card.quantity) {
+      if (card.quantity < 1 || item.quantity < 1 || item.quantity > card.quantity) {
         return NextResponse.json(
           { error: `Invalid quantity for ${card.name}` },
           { status: 400 },
@@ -60,7 +85,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const subtotal = items.reduce((sum, item) => {
+    const subtotal = normalizedItems.reduce((sum, item) => {
       const card = cards.find((entry) => entry.id === item.cardId)!;
       return sum + card.price * item.quantity;
     }, 0);
@@ -96,7 +121,7 @@ export async function POST(req: Request) {
         status: "PENDING",
         customerId,
         items: {
-          create: items.map((item) => {
+          create: normalizedItems.map((item) => {
             const card = cards.find((entry) => entry.id === item.cardId)!;
             return {
               cardId: item.cardId,

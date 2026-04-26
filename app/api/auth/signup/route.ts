@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME } from "@/lib/auth-cookie";
 import { createCustomer, toPublicUser } from "@/lib/auth-store";
 import { signAuthToken } from "@/lib/auth-jwt";
+import { sendRegistrationEmail } from "@/lib/email/templates";
 
 export async function POST(req: Request) {
   try {
@@ -43,6 +44,13 @@ export async function POST(req: Request) {
       path: "/",
       maxAge: 60 * 60 * 24,
     });
+
+    // Keep signup successful even if email delivery fails.
+    void sendRegistrationEmail({
+      name: user.name,
+      email: user.email,
+    });
+
     return response;
   } catch {
     return NextResponse.json({ error: "Failed to create account." }, { status: 500 });

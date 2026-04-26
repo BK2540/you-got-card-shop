@@ -102,19 +102,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
 
     setItems((prev) => {
+      const availableStock = Math.max(0, card.quantity);
+      if (availableStock < 1) {
+        return prev;
+      }
+
+      const safeQty = Math.max(1, Math.min(qty, availableStock));
       const found = prev.find((item) => item.cardId === card.id);
       if (found) {
         return prev.map((item) =>
           item.cardId === card.id
             ? {
                 ...item,
-                quantity: Math.min(item.quantity + qty, card.quantity || 99),
+                quantity: Math.min(item.quantity + safeQty, availableStock),
               }
             : item,
         );
       }
 
-      return [...prev, { cardId: card.id, quantity: qty, card }];
+      return [...prev, { cardId: card.id, quantity: safeQty, card }];
     });
   };
 
@@ -125,11 +131,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQty = (cardId: string, qty: number) => {
     setItems((prev) =>
       prev
-        .map((item) =>
-          item.cardId === cardId
-            ? { ...item, quantity: Math.max(1, qty) }
-            : item,
-        )
+        .map((item) => {
+          if (item.cardId !== cardId) {
+            return item;
+          }
+
+          const stock = Math.max(0, item.card.quantity);
+          if (stock < 1) {
+            return { ...item, quantity: 0 };
+          }
+
+          const safeQty = Number.isFinite(qty)
+            ? Math.min(stock, Math.max(1, Math.floor(qty)))
+            : item.quantity;
+
+          return { ...item, quantity: safeQty };
+        })
         .filter((item) => item.quantity > 0),
     );
   };
