@@ -72,7 +72,7 @@ export async function finalizePaidOrder(
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM \`order\` WHERE id = ${orderId} FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM \`Order\` WHERE id = ${orderId} FOR UPDATE`;
 
       const order = await tx.order.findUnique({
         where: { id: orderId },
@@ -163,6 +163,12 @@ export async function finalizePaidOrder(
         ? "insufficient_stock"
         : "unexpected";
     outcome = "failed";
+
+    console.error("Failed to finalize paid order", {
+      orderId,
+      reason: failureReason,
+      error,
+    });
 
     await prisma.order.updateMany({
       where: { id: orderId, status: "PENDING" },
