@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { CardStatus } from "@prisma/client";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { getStripe } from "@/lib/stripe";
 
 type CheckoutRequestItem = {
   cardId: string;
@@ -35,6 +33,7 @@ const DELIVERY_METHODS: Record<string, { label: string; amount: number }> = {
 
 export async function POST(req: Request) {
   try {
+    const stripe = getStripe();
     const body = (await req.json()) as CheckoutRequestBody;
     const items = body.items ?? [];
     const checkoutKey = (body.checkoutKey?.trim() ?? crypto.randomUUID()).slice(0, 120);

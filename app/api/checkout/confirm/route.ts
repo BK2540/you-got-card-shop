@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { finalizePaidOrder } from "@/lib/orders/finalize-paid-order";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { getStripe } from "@/lib/stripe";
 
 type ConfirmCheckoutBody = {
   orderId?: string;
@@ -15,6 +13,7 @@ const refundIfNeeded = async (
   orderId: string,
   reason: string,
 ) => {
+  const stripe = getStripe();
   const existingRefunds = await stripe.refunds.list({
     payment_intent: paymentIntentId,
     limit: 1,
@@ -38,6 +37,7 @@ const refundIfNeeded = async (
 
 export async function POST(req: Request) {
   try {
+    const stripe = getStripe();
     const body = (await req.json()) as ConfirmCheckoutBody;
     const orderId = body.orderId?.trim() ?? "";
     const paymentIntentId = body.paymentIntentId?.trim() ?? "";

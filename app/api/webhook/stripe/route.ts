@@ -4,14 +4,14 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { sendOrderReceiptEmail } from "@/lib/email/templates";
 import { finalizePaidOrder } from "@/lib/orders/finalize-paid-order";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { getStripe, getStripeWebhookSecret } from "@/lib/stripe";
 
 const refundIfNeeded = async (
   paymentIntentId: string,
   orderId: string,
   reason: string,
 ) => {
+  const stripe = getStripe();
   const existingRefunds = await stripe.refunds.list({
     payment_intent: paymentIntentId,
     limit: 1,
@@ -34,6 +34,7 @@ const refundIfNeeded = async (
 };
 
 export async function POST(req: Request) {
+  const stripe = getStripe();
   const body = await req.text();
   const signature = (await headers()).get("stripe-signature");
 
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!,
+      getStripeWebhookSecret(),
     );
   } catch {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
