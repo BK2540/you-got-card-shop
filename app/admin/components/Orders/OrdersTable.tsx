@@ -135,11 +135,12 @@ const OrdersTable = ({ orders, onOrderUpdated }: OrdersTableProps) => {
 
       <div className="rounded-3xl bg-surface p-6 shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1080px] text-sm">
+          <table className="w-full min-w-[1280px] text-sm">
             <thead>
               <tr>
                 <th className="text-left">Order ID</th>
                 <th className="text-left">Customer</th>
+                <th className="text-left">Shipping</th>
                 <th className="text-left">Items</th>
                 <th className="text-left">Total</th>
                 <th className="text-left">Status</th>
@@ -161,9 +162,29 @@ const OrdersTable = ({ orders, onOrderUpdated }: OrdersTableProps) => {
                     <td className="py-3 font-mono text-xs">{order.id}</td>
                     <td>
                       <div className="py-3">
-                        <p>{order.customer?.name ?? "-"}</p>
+                        <p>{order.shippingName ?? order.customer?.name ?? "-"}</p>
                         <p className="text-xs text-gray-400">
-                          {order.customer?.email ?? ""}
+                          {order.shippingEmail ?? order.customer?.email ?? ""}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {order.shippingPhone ?? ""}
+                        </p>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="max-w-64 space-y-1 py-3 text-xs text-gray-300">
+                        <p>{order.shippingAddressLine1 ?? "-"}</p>
+                        {order.shippingAddressLine2 && (
+                          <p>{order.shippingAddressLine2}</p>
+                        )}
+                        <p>
+                          {[order.shippingCity, order.shippingProvince, order.shippingPostalCode]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                        <p>{order.shippingCountry ?? ""}</p>
+                        <p className="text-orange-300">
+                          {(order.deliveryMethod ?? "standard").replaceAll("_", " ")}
                         </p>
                       </div>
                     </td>
@@ -176,7 +197,14 @@ const OrdersTable = ({ orders, onOrderUpdated }: OrdersTableProps) => {
                         ))}
                       </div>
                     </td>
-                    <td className="py-3">THB {order.total.toFixed(2)}</td>
+                    <td className="py-3">
+                      <p>THB {order.total.toFixed(2)}</p>
+                      {order.shippingAmount > 0 && (
+                        <p className="text-xs text-gray-400">
+                          Shipping: THB {order.shippingAmount.toFixed(2)}
+                        </p>
+                      )}
+                    </td>
                     <td className="py-3">
                       <select
                         className="rounded-lg border border-white/10 bg-black/30 px-2 py-1"

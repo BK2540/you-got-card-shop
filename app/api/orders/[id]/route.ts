@@ -2,6 +2,24 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthFromRequest } from "@/lib/auth-server";
 
+const formatOrder = <
+  T extends {
+    totalAmount: number;
+    shippingAmount: number;
+    items: Array<{ unitPriceAmount: number }>;
+  },
+>(
+  order: T,
+) => ({
+  ...order,
+  total: order.totalAmount / 100,
+  shippingAmount: order.shippingAmount / 100,
+  items: order.items.map((item) => ({
+    ...item,
+    unitPrice: item.unitPriceAmount / 100,
+  })),
+});
+
 const ORDER_STATUSES = [
   "PENDING",
   "PAID",
@@ -65,7 +83,7 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(formatOrder(updated));
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to update order";

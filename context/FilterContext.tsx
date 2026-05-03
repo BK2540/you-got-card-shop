@@ -3,9 +3,14 @@
 
 import { createContext, useState, ReactNode } from "react";
 
-export const FilterContext = createContext({
+type FilterContextValue = {
+  search: string;
+  setSearch: (value: string) => void;
+};
+
+export const FilterContext = createContext<FilterContextValue>({
   search: "",
-  setSearch: (v: string) => {},
+  setSearch: () => undefined,
 });
 
 export const FilterProvider = ({ children }: { children: ReactNode }) => {

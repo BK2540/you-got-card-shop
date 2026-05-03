@@ -2,6 +2,24 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthFromRequest } from "@/lib/auth-server";
 
+const formatOrder = <
+  T extends {
+    totalAmount: number;
+    shippingAmount: number;
+    items: Array<{ unitPriceAmount: number }>;
+  },
+>(
+  order: T,
+) => ({
+  ...order,
+  total: order.totalAmount / 100,
+  shippingAmount: order.shippingAmount / 100,
+  items: order.items.map((item) => ({
+    ...item,
+    unitPrice: item.unitPriceAmount / 100,
+  })),
+});
+
 export async function GET(req: Request) {
   const auth = getAuthFromRequest(req);
   if (!auth || auth.role !== "admin") {
@@ -39,5 +57,10 @@ export async function GET(req: Request) {
     },
   });
 
-  return NextResponse.json(customersWithOrders);
+  return NextResponse.json(
+    customersWithOrders.map((customer) => ({
+      ...customer,
+      orders: customer.orders.map(formatOrder),
+    })),
+  );
 }

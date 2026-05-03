@@ -2,6 +2,19 @@ import type { AuthTokenPayload } from "@/lib/auth-jwt";
 
 const DEFAULT_SECRET = "dev-only-change-me";
 
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (secret) {
+    return secret;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET must be set in production.");
+  }
+
+  return DEFAULT_SECRET;
+};
+
 const base64UrlToUint8Array = (value: string) => {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
@@ -41,7 +54,7 @@ export const verifyAuthTokenEdge = async (token: string) => {
   const [header, payload, signature] = parts;
   const unsigned = `${header}.${payload}`;
 
-  const secret = process.env.JWT_SECRET || DEFAULT_SECRET;
+  const secret = getJwtSecret();
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),

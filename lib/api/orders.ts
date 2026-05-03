@@ -12,8 +12,19 @@ export type OrderStatus = (typeof orderStatuses)[number];
 export type OrderListItem = {
   id: string;
   total: number;
+  shippingAmount: number;
   status: OrderStatus;
   trackingNumber?: string | null;
+  shippingName?: string | null;
+  shippingEmail?: string | null;
+  shippingPhone?: string | null;
+  shippingAddressLine1?: string | null;
+  shippingAddressLine2?: string | null;
+  shippingCity?: string | null;
+  shippingProvince?: string | null;
+  shippingPostalCode?: string | null;
+  shippingCountry?: string | null;
+  deliveryMethod?: string | null;
   createdAt: string;
   customer?: {
     id: string;

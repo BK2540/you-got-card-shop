@@ -10,6 +10,32 @@ type ConfirmCheckoutBody = {
   paymentIntentId?: string;
 };
 
+const refundIfNeeded = async (
+  paymentIntentId: string,
+  orderId: string,
+  reason: string,
+) => {
+  const existingRefunds = await stripe.refunds.list({
+    payment_intent: paymentIntentId,
+    limit: 1,
+  });
+
+  if (existingRefunds.data.length > 0) {
+    return;
+  }
+
+  await stripe.refunds.create({
+    payment_intent: paymentIntentId,
+    reason: "requested_by_customer",
+    metadata: {
+      orderId,
+      refundReason: reason,
+    },
+  }, {
+    idempotencyKey: `refund:${orderId}`,
+  });
+};
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as ConfirmCheckoutBody;
@@ -64,7 +90,19 @@ export async function POST(req: Request) {
 
     const result = await finalizePaidOrder(orderId);
 
-    if (!result.processed) {
+    if (result.outcome === "failed") {
+      await refundIfNeeded(
+        paymentIntentId,
+        orderId,
+        result.failureReason ?? "unknown_finalize_failure",
+      );
+      return NextResponse.json(
+        { error: "Payment captured but stock was unavailable. The payment was refunded." },
+        { status: 409 },
+      );
+    }
+
+    if (result.outcome !== "processed") {
       const refreshed = await prisma.order.findUnique({
         where: { id: orderId },
         select: { status: true },
@@ -90,4 +128,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

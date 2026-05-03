@@ -11,7 +11,7 @@ type CardWithImages = {
   team: string;
   traderName?: string | null;
   printRun?: string | null;
-  price: number;
+  priceAmount: number;
   grade: string;
   year: number;
   quantity: number;
@@ -47,6 +47,7 @@ const formatCard = (card: CardWithImages) => {
 
   return {
     ...card,
+    price: card.priceAmount / 100,
     images,
     image: images[0]?.url ?? "",
   };
@@ -115,9 +116,9 @@ export async function GET(req: Request) {
       ...(year && Number.isFinite(Number(year)) ? { year: Number(year) } : {}),
       ...((minPrice !== undefined || maxPrice !== undefined)
         ? {
-            price: {
-              ...(minPrice !== undefined ? { gte: minPrice } : {}),
-              ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+            priceAmount: {
+              ...(minPrice !== undefined ? { gte: Math.round(minPrice * 100) } : {}),
+              ...(maxPrice !== undefined ? { lte: Math.round(maxPrice * 100) } : {}),
             },
           }
         : {}),
@@ -201,11 +202,12 @@ export async function GET(req: Request) {
     "isRecommended",
   ]);
   const normalizedSortBy = sortableFields.has(sortBy) ? sortBy : "createdAt";
+  const dbSortBy = normalizedSortBy === "price" ? "priceAmount" : normalizedSortBy;
 
   const [cards, totalCount] = await Promise.all([
     prisma.card.findMany({
       where,
-      orderBy: { [normalizedSortBy]: sortDirection },
+      orderBy: { [dbSortBy]: sortDirection },
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
@@ -328,7 +330,7 @@ export async function POST(req: Request) {
         team,
         traderName,
         printRun,
-        price,
+        priceAmount: Math.round(price * 100),
         grade,
         year,
         quantity,

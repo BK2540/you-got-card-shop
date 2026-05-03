@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useRouter } from "next/navigation";
 import {
@@ -17,10 +17,17 @@ const stripePromise = loadStripe(
 
 type CheckoutInitResponse = {
   orderId: string;
+  subtotal: number;
+  shippingAmount: number;
   amount: number;
   currency: string;
   clientSecret: string;
 };
+
+const deliveryMethods = [
+  { value: "standard", label: "Standard delivery", amount: 0 },
+  { value: "express", label: "Express delivery", amount: 50 },
+];
 
 type PaymentFormProps = {
   orderId: string;
@@ -112,10 +119,22 @@ function PaymentForm({ orderId, onPaid }: PaymentFormProps) {
 export default function PaymentPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
+  const checkoutKeyRef = useRef(
+    globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("Thailand");
+  const [deliveryMethod, setDeliveryMethod] = useState("standard");
   const [checkoutInit, setCheckoutInit] = useState<CheckoutInitResponse | null>(
     null,
   );
@@ -125,8 +144,14 @@ export default function PaymentPage() {
   const canStartPayment =
     items.length > 0 &&
     !loading &&
+    customerName.trim().length > 1 &&
     customerEmail.trim().length > 3 &&
-    customerEmail.includes("@");
+    customerEmail.includes("@") &&
+    customerPhone.trim().length > 5 &&
+    addressLine1.trim().length > 4 &&
+    city.trim().length > 1 &&
+    province.trim().length > 1 &&
+    postalCode.trim().length > 2;
 
   const elementOptions = useMemo(
     () => ({
@@ -147,6 +172,7 @@ export default function PaymentPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          checkoutKey: checkoutKeyRef.current,
           items: items.map((item) => ({
             cardId: item.cardId,
             quantity: item.quantity,
@@ -154,6 +180,14 @@ export default function PaymentPage() {
           customer: {
             name: customerName,
             email: customerEmail,
+            phone: customerPhone,
+            addressLine1,
+            addressLine2,
+            city,
+            province,
+            postalCode,
+            country,
+            deliveryMethod,
           },
         }),
       });
@@ -216,14 +250,11 @@ export default function PaymentPage() {
         <section className="space-y-4 rounded-2xl border border-white/10 bg-surface p-6 min-h-52.5">
           {!checkoutInit && (
             <>
-              <p className="text-sm text-gray-300">
-                Fill in your details, then continue to card payment.
-              </p>
               <div className="grid gap-3 md:grid-cols-2">
                 <input
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Full name (optional)"
+                  placeholder="Full name"
                   className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none"
                 />
                 <input
@@ -231,6 +262,60 @@ export default function PaymentPage() {
                   onChange={(e) => setCustomerEmail(e.target.value)}
                   type="email"
                   placeholder="Email (required)"
+                  className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none"
+                />
+                <input
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  type="tel"
+                  placeholder="Phone number"
+                  className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none"
+                />
+                <select
+                  value={deliveryMethod}
+                  onChange={(e) => setDeliveryMethod(e.target.value)}
+                  className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none"
+                >
+                  {deliveryMethods.map((method) => (
+                    <option key={method.value} value={method.value} className="bg-surface">
+                      {method.label} - {formatTHB(method.amount)}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                  placeholder="Address line 1"
+                  className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none md:col-span-2"
+                />
+                <input
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                  placeholder="Address line 2 (optional)"
+                  className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none md:col-span-2"
+                />
+                <input
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="City / district"
+                  className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none"
+                />
+                <input
+                  value={province}
+                  onChange={(e) => setProvince(e.target.value)}
+                  placeholder="Province"
+                  className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none"
+                />
+                <input
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="Postal code"
+                  className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none"
+                />
+                <input
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  placeholder="Country"
                   className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none"
                 />
               </div>
@@ -296,6 +381,22 @@ export default function PaymentPage() {
             )}
             <p className="pt-1 text-base font-semibold text-white">
               Subtotal: {formatTHB(subtotal)}
+            </p>
+            <p>
+              Shipping:{" "}
+              {formatTHB(
+                deliveryMethods.find((method) => method.value === deliveryMethod)
+                  ?.amount ?? 0,
+              )}
+            </p>
+            <p className="pt-1 text-base font-semibold text-white">
+              Total:{" "}
+              {formatTHB(
+                subtotal +
+                  (deliveryMethods.find(
+                    (method) => method.value === deliveryMethod,
+                  )?.amount ?? 0),
+              )}
             </p>
           </div>
         </aside>

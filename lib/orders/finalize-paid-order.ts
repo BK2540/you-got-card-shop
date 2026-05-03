@@ -6,6 +6,8 @@ const PURCHASED_STATUSES = new Set(["PAID", "IN_DELIVERY", "COMPLETED"]);
 type PaidOrderSummary = {
   id: string;
   total: number;
+  stripeSessionId: string | null;
+  status: string;
   customer: {
     name: string | null;
     email: string;
@@ -20,16 +22,53 @@ type PaidOrderSummary = {
   }>;
 };
 
-type FinalizePaidOrderResult = {
-  processed: boolean;
-  order: PaidOrderSummary | null;
+type DbPaidOrderSummary = Omit<PaidOrderSummary, "total" | "items"> & {
+  totalAmount: number;
+  items: Array<{
+    quantity: number;
+    unitPriceAmount: number;
+    cardId: string;
+    card: {
+      name: string;
+      playerName: string;
+    };
+  }>;
 };
+
+type FinalizeOutcome =
+  | "processed"
+  | "already_processed"
+  | "blocked"
+  | "order_not_found"
+  | "failed";
+
+type FailureReason = "insufficient_stock" | "unexpected";
+
+type FinalizePaidOrderResult = {
+  outcome: FinalizeOutcome;
+  order: PaidOrderSummary | null;
+  failureReason?: FailureReason;
+};
+
+const formatOrderSummary = (order: DbPaidOrderSummary): PaidOrderSummary => ({
+  id: order.id,
+  total: order.totalAmount / 100,
+  stripeSessionId: order.stripeSessionId,
+  status: order.status,
+  customer: order.customer,
+  items: order.items.map((item) => ({
+    quantity: item.quantity,
+    unitPrice: item.unitPriceAmount / 100,
+    card: item.card,
+  })),
+});
 
 export async function finalizePaidOrder(
   orderId: string,
 ): Promise<FinalizePaidOrderResult> {
-  let processed = false;
+  let outcome: FinalizeOutcome = "order_not_found";
   let orderSnapshot: PaidOrderSummary | null = null;
+  let failureReason: FailureReason | undefined;
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -53,16 +92,19 @@ export async function finalizePaidOrder(
       });
 
       if (!order) {
+        outcome = "order_not_found";
         return;
       }
 
-      orderSnapshot = order;
+      orderSnapshot = formatOrderSummary(order);
 
       if (PURCHASED_STATUSES.has(order.status)) {
+        outcome = "already_processed";
         return;
       }
 
       if (order.status === "FAILED" || order.status === "CANCELED") {
+        outcome = "blocked";
         return;
       }
 
@@ -83,7 +125,7 @@ export async function finalizePaidOrder(
         });
 
         if (decrementResult.count < 1) {
-          throw new Error("Insufficient stock");
+          throw new Error("INSUFFICIENT_STOCK");
         }
 
         const cardAfterUpdate = await tx.card.findUnique({
@@ -107,9 +149,21 @@ export async function finalizePaidOrder(
         data: { status: "PAID" },
       });
 
-      processed = true;
+      outcome = "processed";
+      if (orderSnapshot) {
+        orderSnapshot = {
+          ...orderSnapshot,
+          status: "PAID",
+        };
+      }
     });
-  } catch {
+  } catch (error) {
+    failureReason =
+      error instanceof Error && error.message === "INSUFFICIENT_STOCK"
+        ? "insufficient_stock"
+        : "unexpected";
+    outcome = "failed";
+
     await prisma.order.updateMany({
       where: { id: orderId, status: "PENDING" },
       data: { status: "FAILED" },
@@ -117,8 +171,8 @@ export async function finalizePaidOrder(
   }
 
   return {
-    processed,
+    outcome,
     order: orderSnapshot,
+    ...(failureReason ? { failureReason } : {}),
   };
 }
-

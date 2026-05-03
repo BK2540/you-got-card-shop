@@ -3,9 +3,9 @@
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Suspense, useMemo, useState } from "react";
 
-export default function SignInPage() {
+function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signIn, isLoading: authLoading } = useAuth();
@@ -95,5 +95,13 @@ export default function SignInPage() {
         </p>
       </form>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<main className="px-6 py-10">Loading...</main>}>
+      <SignInForm />
+    </Suspense>
   );
 }

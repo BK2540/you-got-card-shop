@@ -20,6 +20,17 @@ type GetCardsOptions = {
   limit?: number;
 };
 
+const getApiUrl = (path: string) => {
+  if (typeof window !== "undefined") {
+    return path;
+  }
+
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+
+  return new URL(path, baseUrl).toString();
+};
+
 export async function getCards(options: GetCardsOptions = {}): Promise<Card[]> {
   const params = new URLSearchParams();
 
@@ -38,9 +49,9 @@ export async function getCards(options: GetCardsOptions = {}): Promise<Card[]> {
   }
 
   const queryString = params.toString();
-  const endpoint = queryString
-    ? `http://localhost:3000/api/cards?${queryString}`
-    : "http://localhost:3000/api/cards";
+  const endpoint = getApiUrl(
+    queryString ? `/api/cards?${queryString}` : "/api/cards",
+  );
 
   const res = await fetch(endpoint, {
     cache: "no-store",
@@ -75,7 +86,7 @@ export async function getAdminCards(options: GetAdminCardsOptions = {}) {
     sortDirection: options.sortDirection ?? "desc",
   });
 
-  const res = await fetch(`http://localhost:3000/api/cards?${params}`, {
+  const res = await fetch(getApiUrl(`/api/cards?${params}`), {
     cache: "no-store",
   });
 
@@ -87,7 +98,7 @@ export async function getAdminCards(options: GetAdminCardsOptions = {}) {
 }
 
 export async function createCard(data: FormData) {
-  const res = await fetch("http://localhost:3000/api/cards", {
+  const res = await fetch("/api/cards", {
     method: "POST",
     body: data,
   });
@@ -111,14 +122,14 @@ export async function createCard(data: FormData) {
 }
 
 export async function deleteCard(id: string) {
-  await fetch(`http://localhost:3000/api/cards/${id}`, {
+  await fetch(`/api/cards/${id}`, {
     method: "DELETE",
   });
 }
 
 
 export async function updateCard(id: string, data: FormData) {
-  const res = await fetch(`http://localhost:3000/api/cards/${id}`, {
+  const res = await fetch(`/api/cards/${id}`, {
     method: "PUT",
     body: data,
   });

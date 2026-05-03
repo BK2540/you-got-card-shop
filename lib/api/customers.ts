@@ -7,8 +7,19 @@ export type CustomerListItem = {
   orders: Array<{
     id: string;
     total: number;
+    shippingAmount: number;
     status: OrderStatus;
     trackingNumber?: string | null;
+    shippingName?: string | null;
+    shippingEmail?: string | null;
+    shippingPhone?: string | null;
+    shippingAddressLine1?: string | null;
+    shippingAddressLine2?: string | null;
+    shippingCity?: string | null;
+    shippingProvince?: string | null;
+    shippingPostalCode?: string | null;
+    shippingCountry?: string | null;
+    deliveryMethod?: string | null;
     createdAt: string;
     items: Array<{
       id: string;

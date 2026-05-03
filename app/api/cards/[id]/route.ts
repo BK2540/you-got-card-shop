@@ -15,7 +15,7 @@ type CardWithImages = {
   team: string;
   traderName?: string | null;
   printRun?: string | null;
-  price: number;
+  priceAmount: number;
   grade: string;
   year: number;
   quantity: number;
@@ -49,6 +49,7 @@ const formatCard = (card: CardWithImages) => {
 
   return {
     ...card,
+    price: card.priceAmount / 100,
     images,
     image: images[0]?.url ?? "",
   };
@@ -232,10 +233,13 @@ export async function PUT(
     );
     const removedPublicIds = (existingCard?.images ?? [])
       .map((image) => image.publicId || extractPublicIdFromUrl(image.url))
-      .filter(
-        (publicId): publicId is string =>
-          Boolean(publicId) && !nextPublicIdSet.has(publicId),
-      );
+      .filter((publicId): publicId is string => {
+        if (!publicId) {
+          return false;
+        }
+
+        return !nextPublicIdSet.has(publicId);
+      });
 
     await Promise.allSettled(
       removedPublicIds.map((publicId) => destroyImageByPublicId(publicId)),
@@ -253,7 +257,7 @@ export async function PUT(
         team,
         traderName,
         printRun,
-        price,
+        priceAmount: Math.round(price * 100),
         grade,
         year,
         quantity,

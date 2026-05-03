@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { CardStatus } from "@prisma/client";
@@ -12,16 +13,31 @@ type CheckoutRequestItem = {
 
 type CheckoutRequestBody = {
   items: CheckoutRequestItem[];
+  checkoutKey?: string;
   customer?: {
     name?: string;
     email?: string;
+    phone?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    province?: string;
+    postalCode?: string;
+    country?: string;
+    deliveryMethod?: string;
   };
+};
+
+const DELIVERY_METHODS: Record<string, { label: string; amount: number }> = {
+  standard: { label: "Standard delivery", amount: 0 },
+  express: { label: "Express delivery", amount: 5000 },
 };
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as CheckoutRequestBody;
     const items = body.items ?? [];
+    const checkoutKey = (body.checkoutKey?.trim() ?? crypto.randomUUID()).slice(0, 120);
 
     if (!items.length) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
@@ -85,12 +101,12 @@ export async function POST(req: Request) {
       }
     }
 
-    const subtotal = normalizedItems.reduce((sum, item) => {
+    const subtotalAmount = normalizedItems.reduce((sum, item) => {
       const card = cards.find((entry) => entry.id === item.cardId)!;
-      return sum + card.price * item.quantity;
+      return sum + card.priceAmount * item.quantity;
     }, 0);
 
-    if (!Number.isFinite(subtotal) || subtotal <= 0) {
+    if (!Number.isFinite(subtotalAmount) || subtotalAmount <= 0) {
       return NextResponse.json(
         { error: "Invalid payment amount" },
         { status: 400 },
@@ -100,6 +116,34 @@ export async function POST(req: Request) {
     let customerId: string | null = null;
     const customerEmail = body.customer?.email?.trim() ?? "";
     const customerName = body.customer?.name?.trim() ?? "";
+    const shippingPhone = body.customer?.phone?.trim() ?? "";
+    const shippingAddressLine1 = body.customer?.addressLine1?.trim() ?? "";
+    const shippingAddressLine2 = body.customer?.addressLine2?.trim() ?? "";
+    const shippingCity = body.customer?.city?.trim() ?? "";
+    const shippingProvince = body.customer?.province?.trim() ?? "";
+    const shippingPostalCode = body.customer?.postalCode?.trim() ?? "";
+    const shippingCountry = body.customer?.country?.trim() || "Thailand";
+    const deliveryMethodInput = body.customer?.deliveryMethod?.trim() || "standard";
+    const deliveryMethod = DELIVERY_METHODS[deliveryMethodInput]
+      ? deliveryMethodInput
+      : "standard";
+    const shippingAmount = DELIVERY_METHODS[deliveryMethod].amount;
+    const totalAmount = subtotalAmount + shippingAmount;
+
+    if (
+      !customerEmail ||
+      !customerName ||
+      !shippingPhone ||
+      !shippingAddressLine1 ||
+      !shippingCity ||
+      !shippingProvince ||
+      !shippingPostalCode
+    ) {
+      return NextResponse.json(
+        { error: "Shipping contact and address are required" },
+        { status: 400 },
+      );
+    }
 
     if (customerEmail) {
       const customer = await prisma.customer.upsert({
@@ -115,37 +159,17 @@ export async function POST(req: Request) {
       customerId = customer.id;
     }
 
-    const order = await prisma.order.create({
-      data: {
-        total: subtotal,
-        status: "PENDING",
-        customerId,
-        items: {
-          create: normalizedItems.map((item) => {
-            const card = cards.find((entry) => entry.id === item.cardId)!;
-            return {
-              cardId: item.cardId,
-              quantity: item.quantity,
-              unitPrice: card.price,
-            };
-          }),
-        },
-      },
-    });
-
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(subtotal * 100),
+      amount: totalAmount,
       currency: "thb",
       payment_method_types: ["card"],
       receipt_email: customerEmail || undefined,
       metadata: {
-        orderId: order.id,
+        checkoutKey,
+        deliveryMethod,
       },
-    });
-
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { stripeSessionId: paymentIntent.id },
+    }, {
+      idempotencyKey: `checkout:${checkoutKey}`,
     });
 
     if (!paymentIntent.client_secret) {
@@ -155,10 +179,83 @@ export async function POST(req: Request) {
       );
     }
 
+    let order = await prisma.order.findUnique({
+      where: { stripeSessionId: paymentIntent.id },
+      select: { id: true },
+    });
+
+    if (!order) {
+      try {
+        order = await prisma.order.create({
+          data: {
+            totalAmount,
+            shippingAmount,
+            status: "PENDING",
+            customerId,
+            shippingName: customerName,
+            shippingEmail: customerEmail,
+            shippingPhone,
+            shippingAddressLine1,
+            shippingAddressLine2: shippingAddressLine2 || null,
+            shippingCity,
+            shippingProvince,
+            shippingPostalCode,
+            shippingCountry,
+            deliveryMethod,
+            stripeSessionId: paymentIntent.id,
+            items: {
+              create: normalizedItems.map((item) => {
+                const card = cards.find((entry) => entry.id === item.cardId)!;
+                return {
+                  cardId: item.cardId,
+                  quantity: item.quantity,
+                  unitPriceAmount: card.priceAmount,
+                };
+              }),
+            },
+          },
+          select: { id: true },
+        });
+      } catch (error) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          (error as { code?: string }).code === "P2002"
+        ) {
+          order = await prisma.order.findUnique({
+            where: { stripeSessionId: paymentIntent.id },
+            select: { id: true },
+          });
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    if (!order) {
+      return NextResponse.json(
+        { error: "Failed to create or locate checkout order" },
+        { status: 500 },
+      );
+    }
+
+    if (paymentIntent.metadata?.orderId !== order.id) {
+      await stripe.paymentIntents.update(paymentIntent.id, {
+        metadata: {
+          ...paymentIntent.metadata,
+          orderId: order.id,
+          checkoutKey,
+        },
+      });
+    }
+
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       orderId: order.id,
-      amount: subtotal,
+      subtotal: subtotalAmount / 100,
+      shippingAmount: shippingAmount / 100,
+      amount: totalAmount / 100,
       currency: "THB",
     });
   } catch (error) {

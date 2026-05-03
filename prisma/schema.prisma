@@ -29,7 +29,7 @@ model Card {
   team          String
   traderName    String?
   printRun      String?
-  price         Float
+  priceAmount   Int
   grade         String
   year          Int
   quantity      Int        @default(0)
@@ -76,6 +76,19 @@ model Customer {
   @@index([name])
 }
 
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  role         String   @default("customer")
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
 model HomeContent {
   id          String   @id @default(uuid())
   title       String
@@ -92,13 +105,24 @@ model HomeContent {
 }
 
 model Order {
-  id              String      @id @default(uuid())
-  total           Float
-  status          OrderStatus @default(PENDING)
-  trackingNumber  String?
-  stripeSessionId String?     @unique
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @default(now()) @updatedAt
+  id                   String      @id @default(uuid())
+  totalAmount          Int
+  shippingAmount       Int         @default(0)
+  status               OrderStatus @default(PENDING)
+  trackingNumber       String?
+  stripeSessionId      String?     @unique
+  shippingName         String?
+  shippingEmail        String?
+  shippingPhone        String?
+  shippingAddressLine1 String?
+  shippingAddressLine2 String?
+  shippingCity         String?
+  shippingProvince     String?
+  shippingPostalCode   String?
+  shippingCountry      String      @default("Thailand")
+  deliveryMethod       String      @default("standard")
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @default(now()) @updatedAt
 
   customerId String?
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -113,7 +137,7 @@ model Order {
 model OrderItem {
   id        String   @id @default(uuid())
   quantity  Int
-  unitPrice Float
+  unitPriceAmount Int
   createdAt DateTime @default(now())
 
   orderId String

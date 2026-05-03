@@ -26,7 +26,31 @@ const base64UrlDecode = (value: string) => {
   return Buffer.from(padded, "base64").toString("utf8");
 };
 
-const getJwtSecret = () => process.env.JWT_SECRET || DEFAULT_SECRET;
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (secret) {
+    return secret;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET must be set in production.");
+  }
+
+  return DEFAULT_SECRET;
+};
+
+const toBuffer = (value: string) => Buffer.from(value, "utf8");
+
+const safeEqual = (left: string, right: string) => {
+  const leftBuffer = toBuffer(left);
+  const rightBuffer = toBuffer(right);
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+};
 
 export const signAuthToken = (
   payload: Omit<AuthTokenPayload, "exp">,
@@ -70,7 +94,7 @@ export const verifyAuthToken = (token: string): AuthTokenPayload | null => {
     .replace(/\//g, "_")
     .replace(/=+$/g, "");
 
-  if (expectedSignature !== signature) {
+  if (!safeEqual(expectedSignature, signature)) {
     return null;
   }
 

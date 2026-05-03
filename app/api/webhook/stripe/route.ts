@@ -7,6 +7,32 @@ import { finalizePaidOrder } from "@/lib/orders/finalize-paid-order";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+const refundIfNeeded = async (
+  paymentIntentId: string,
+  orderId: string,
+  reason: string,
+) => {
+  const existingRefunds = await stripe.refunds.list({
+    payment_intent: paymentIntentId,
+    limit: 1,
+  });
+
+  if (existingRefunds.data.length > 0) {
+    return;
+  }
+
+  await stripe.refunds.create({
+    payment_intent: paymentIntentId,
+    reason: "requested_by_customer",
+    metadata: {
+      orderId,
+      refundReason: reason,
+    },
+  }, {
+    idempotencyKey: `refund:${orderId}`,
+  });
+};
+
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = (await headers()).get("stripe-signature");
@@ -33,7 +59,7 @@ export async function POST(req: Request) {
 
     if (orderId) {
       const result = await finalizePaidOrder(orderId);
-      if (result.processed && result.order) {
+      if (result.outcome === "processed" && result.order) {
         const receiptEmail = intent.receipt_email || result.order.customer?.email || "";
         if (receiptEmail) {
           await sendOrderReceiptEmail({
@@ -52,6 +78,14 @@ export async function POST(req: Request) {
             })),
           });
         }
+      }
+
+      if (result.outcome === "failed") {
+        await refundIfNeeded(
+          intent.id,
+          orderId,
+          result.failureReason ?? "unknown_finalize_failure",
+        );
       }
     }
   }

@@ -14,15 +14,15 @@ export default function PageBackground({ children }: { children: ReactNode }) {
           src={bg}
           alt="bg"
           width={720}
-          className="opacity-80 blur-[20px]"
+          className="opacity-40 blur-[20px]"
           priority
         />
       </div>
 
       {/* HORIZONTAL BANDS */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* <div className="absolute inset-0 pointer-events-none">
         <div className="h-full w-full bg-[repeating-linear-gradient(to_bottom,rgba(255,120,0,0.25)_0px,rgba(255,120,0,0.25)_6px,transparent_6px,transparent_40px)] blur-[8px]" />
-      </div>
+      </div> */}
 
       {/* SIDE DARK MASK - ตัวนี้ช่วยกดเส้นส้มซ้าย/ขวาโดยตรง */}
       <div className="page-side-mask" />
