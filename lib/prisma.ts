@@ -1,6 +1,10 @@
 // lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 
+if (!process.env.DATABASE_URL?.trim() && process.env.MYSQL_URL?.trim()) {
+  process.env.DATABASE_URL = process.env.MYSQL_URL;
+}
+
 const globalForPrisma = global as unknown as {
   prisma: PrismaClient;
 };

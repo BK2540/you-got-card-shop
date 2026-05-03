@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "lint": "eslint",
-    "migrate:deploy": "prisma migrate deploy",
+    "migrate:deploy": "node scripts/with-database-url.mjs prisma migrate deploy",
     "postinstall": "prisma generate"
   },
   "dependencies": {
