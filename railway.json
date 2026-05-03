@@ -10,7 +10,7 @@
     "numReplicas": 1,
     "startCommand": "npm run start",
     "preDeployCommand": [
-      "npm run migrate:deploy"
+      "node scripts/with-database-url.mjs prisma migrate resolve --rolled-back 20260415101845_add_card_images && npm run migrate:deploy"
     ],
     "sleepApplication": false,
     "useLegacyStacker": false,
