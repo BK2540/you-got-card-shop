@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       if (result.outcome === "processed" && result.order) {
         const receiptEmail = intent.receipt_email || result.order.customer?.email || "";
         if (receiptEmail) {
-          await sendOrderReceiptEmail({
+          const emailResult = await sendOrderReceiptEmail({
             email: receiptEmail,
             customerName: result.order.customer?.name,
             orderId: result.order.id,
@@ -78,6 +78,14 @@ export async function POST(req: Request) {
               unitPrice: item.unitPrice,
             })),
           });
+
+          if (!emailResult.ok) {
+            console.error("Failed to send order receipt email from webhook", {
+              orderId: result.order.id,
+              paymentIntentId: intent.id,
+              error: emailResult.error,
+            });
+          }
         }
       }
 

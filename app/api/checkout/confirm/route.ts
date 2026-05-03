@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { finalizePaidOrder } from "@/lib/orders/finalize-paid-order";
 import { getStripe } from "@/lib/stripe";
+import { sendOrderReceiptEmail } from "@/lib/email/templates";
 
 type ConfirmCheckoutBody = {
   orderId?: string;
@@ -33,6 +35,45 @@ const refundIfNeeded = async (
   }, {
     idempotencyKey: `refund:${orderId}`,
   });
+};
+
+const sendReceiptIfPossible = async (
+  paymentIntent: Stripe.PaymentIntent,
+  order: NonNullable<Awaited<ReturnType<typeof finalizePaidOrder>>["order"]>,
+) => {
+  const receiptEmail = paymentIntent.receipt_email || order.customer?.email || "";
+
+  if (!receiptEmail) {
+    console.warn("Order receipt email skipped: missing recipient", {
+      orderId: order.id,
+      paymentIntentId: paymentIntent.id,
+    });
+    return;
+  }
+
+  const result = await sendOrderReceiptEmail({
+    email: receiptEmail,
+    customerName: order.customer?.name,
+    orderId: order.id,
+    paidAt: new Date(),
+    total: order.total,
+    items: order.items.map((item) => ({
+      name:
+        item.card.playerName && item.card.playerName !== item.card.name
+          ? `${item.card.name} (${item.card.playerName})`
+          : item.card.name,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+    })),
+  });
+
+  if (!result.ok) {
+    console.error("Failed to send order receipt email", {
+      orderId: order.id,
+      paymentIntentId: paymentIntent.id,
+      error: result.error,
+    });
+  }
 };
 
 export async function POST(req: Request) {
@@ -119,6 +160,10 @@ export async function POST(req: Request) {
         success: true,
         status: refreshed?.status ?? order.status,
       });
+    }
+
+    if (result.order) {
+      await sendReceiptIfPossible(intent, result.order);
     }
 
     return NextResponse.json({ success: true, status: "PAID" });

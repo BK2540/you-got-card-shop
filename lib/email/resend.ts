@@ -43,7 +43,7 @@ export const sendEmail = async (input: {
   }
 
   try {
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: getFromEmail(),
       to,
       subject: input.subject,
@@ -51,8 +51,19 @@ export const sendEmail = async (input: {
       text: input.text,
     });
 
+    if (error) {
+      return {
+        ok: false as const,
+        error:
+          "message" in error && typeof error.message === "string"
+            ? error.message
+            : JSON.stringify(error),
+      };
+    }
+
     return {
       ok: true as const,
+      id: data?.id,
     };
   } catch (error) {
     const message =
