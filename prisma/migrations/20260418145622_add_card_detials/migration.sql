@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `card` ALTER COLUMN `playerName` DROP DEFAULT;
+ALTER TABLE `Card` ALTER COLUMN `playerName` DROP DEFAULT;

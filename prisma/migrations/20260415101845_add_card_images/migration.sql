@@ -5,7 +5,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `card` DROP COLUMN `image`;
+ALTER TABLE `Card` DROP COLUMN `image`;
 
 -- CreateTable
 CREATE TABLE `CardImage` (

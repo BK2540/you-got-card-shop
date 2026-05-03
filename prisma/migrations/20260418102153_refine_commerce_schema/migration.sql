@@ -7,26 +7,26 @@
 
 */
 -- DropForeignKey
-ALTER TABLE `cardimage` DROP FOREIGN KEY `CardImage_cardId_fkey`;
+ALTER TABLE `CardImage` DROP FOREIGN KEY `CardImage_cardId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `order` DROP FOREIGN KEY `Order_customerId_fkey`;
+ALTER TABLE `Order` DROP FOREIGN KEY `Order_customerId_fkey`;
 
 -- AlterTable
-ALTER TABLE `card` ADD COLUMN `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
+ALTER TABLE `Card` ADD COLUMN `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
 
 -- AlterTable
-ALTER TABLE `cardimage` ADD COLUMN `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
+ALTER TABLE `CardImage` ADD COLUMN `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
 
 -- AlterTable
-ALTER TABLE `customer` ADD COLUMN `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ALTER TABLE `Customer` ADD COLUMN `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     ADD COLUMN `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
 
 -- AlterTable
-ALTER TABLE `homecontent` ADD COLUMN `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
+ALTER TABLE `HomeContent` ADD COLUMN `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
 
 -- AlterTable
-ALTER TABLE `order` ADD COLUMN `stripeSessionId` VARCHAR(191) NULL,
+ALTER TABLE `Order` ADD COLUMN `stripeSessionId` VARCHAR(191) NULL,
     ADD COLUMN `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     MODIFY `status` ENUM('PENDING', 'PAID', 'FAILED', 'CANCELED') NOT NULL DEFAULT 'PENDING',
     MODIFY `customerId` VARCHAR(191) NULL;
@@ -82,10 +82,10 @@ ALTER TABLE `OrderItem` ADD CONSTRAINT `OrderItem_orderId_fkey` FOREIGN KEY (`or
 ALTER TABLE `OrderItem` ADD CONSTRAINT `OrderItem_cardId_fkey` FOREIGN KEY (`cardId`) REFERENCES `Card`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- RenameIndex
-ALTER TABLE `cardimage` RENAME INDEX `CardImage_cardId_fkey` TO `CardImage_cardId_idx`;
+ALTER TABLE `CardImage` RENAME INDEX `CardImage_cardId_fkey` TO `CardImage_cardId_idx`;
 
 -- RenameIndex
-ALTER TABLE `homecontent` RENAME INDEX `HomeContent_featuredId_fkey` TO `HomeContent_featuredId_idx`;
+ALTER TABLE `HomeContent` RENAME INDEX `HomeContent_featuredId_fkey` TO `HomeContent_featuredId_idx`;
 
 -- RenameIndex
-ALTER TABLE `order` RENAME INDEX `Order_customerId_fkey` TO `Order_customerId_idx`;
+ALTER TABLE `Order` RENAME INDEX `Order_customerId_fkey` TO `Order_customerId_idx`;
