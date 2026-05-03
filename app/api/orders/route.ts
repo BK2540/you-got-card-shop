@@ -26,23 +26,31 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const orders = await prisma.order.findMany({
-    include: {
-      customer: true,
-      items: {
-        include: {
-          card: {
-            select: {
-              id: true,
-              name: true,
-              playerName: true,
+  try {
+    const orders = await prisma.order.findMany({
+      include: {
+        customer: true,
+        items: {
+          include: {
+            card: {
+              select: {
+                id: true,
+                name: true,
+                playerName: true,
+              },
             },
           },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json(orders.map(formatOrder));
+    return NextResponse.json(orders.map(formatOrder));
+  } catch (error) {
+    console.error("Failed to fetch orders", error);
+    return NextResponse.json(
+      { error: "Failed to fetch orders." },
+      { status: 500 },
+    );
+  }
 }

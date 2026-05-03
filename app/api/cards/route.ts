@@ -126,31 +126,39 @@ export async function GET(req: Request) {
       ...(section === "new-arrival" ? { createdAt: { gte: newArrivalSince } } : {}),
     };
 
-    const cards = await prisma.card.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      include: {
-        images: true,
-      },
-    });
+    try {
+      const cards = await prisma.card.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        include: {
+          images: true,
+        },
+      });
 
-    const formattedCards = cards.map((card) => ({
-      ...formatCard(card),
-      isNewArrival: card.createdAt >= newArrivalSince,
-    }));
+      const formattedCards = cards.map((card) => ({
+        ...formatCard(card),
+        isNewArrival: card.createdAt >= newArrivalSince,
+      }));
 
-    if (section === "recommended") {
+      if (section === "recommended") {
+        return NextResponse.json(
+          formattedCards.filter((card) => card.isRecommended),
+        );
+      }
+
+      if (section === "new-arrival") {
+        return NextResponse.json(formattedCards);
+      }
+
+      return NextResponse.json(formattedCards);
+    } catch (error) {
+      console.error("Failed to fetch cards", error);
       return NextResponse.json(
-        formattedCards.filter((card) => card.isRecommended),
+        { error: "Failed to fetch cards." },
+        { status: 500 },
       );
     }
-
-    if (section === "new-arrival") {
-      return NextResponse.json(formattedCards);
-    }
-
-    return NextResponse.json(formattedCards);
   }
 
   const auth = getAuthFromRequest(req);
@@ -204,31 +212,39 @@ export async function GET(req: Request) {
   const normalizedSortBy = sortableFields.has(sortBy) ? sortBy : "createdAt";
   const dbSortBy = normalizedSortBy === "price" ? "priceAmount" : normalizedSortBy;
 
-  const [cards, totalCount] = await Promise.all([
-    prisma.card.findMany({
-      where,
-      orderBy: { [dbSortBy]: sortDirection },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      include: {
-        images: true,
-      },
-    }),
-    prisma.card.count({ where }),
-  ]);
+  try {
+    const [cards, totalCount] = await Promise.all([
+      prisma.card.findMany({
+        where,
+        orderBy: { [dbSortBy]: sortDirection },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          images: true,
+        },
+      }),
+      prisma.card.count({ where }),
+    ]);
 
-  return NextResponse.json({
-    items: cards.map(formatCard),
-    page,
-    pageSize,
-    totalCount,
-    totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
-    sortBy: normalizedSortBy,
-    sortDirection,
-    search,
-    status,
-    recommendation,
-  });
+    return NextResponse.json({
+      items: cards.map(formatCard),
+      page,
+      pageSize,
+      totalCount,
+      totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+      sortBy: normalizedSortBy,
+      sortDirection,
+      search,
+      status,
+      recommendation,
+    });
+  } catch (error) {
+    console.error("Failed to fetch admin cards", error);
+    return NextResponse.json(
+      { error: "Failed to fetch cards." },
+      { status: 500 },
+    );
+  }
 }
 
 // CREATE card

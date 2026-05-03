@@ -31,11 +31,19 @@ const withFeaturedImage = <
 
 // GET home content
 export async function GET() {
-  const content = await prisma.homeContent.findFirst({
-    include: { featured: { include: { images: true } } },
-  });
+  try {
+    const content = await prisma.homeContent.findFirst({
+      include: { featured: { include: { images: true } } },
+    });
 
-  return NextResponse.json(withFeaturedImage(content));
+    return NextResponse.json(withFeaturedImage(content));
+  } catch (error) {
+    console.error("Failed to fetch home content", error);
+    return NextResponse.json(
+      { error: "Failed to fetch home content." },
+      { status: 500 },
+    );
+  }
 }
 
 // UPDATE home content
