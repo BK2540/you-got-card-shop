@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
-import { useRouter } from "next/navigation";
 import {
   Elements,
   PaymentElement,
@@ -24,10 +23,117 @@ type CheckoutInitResponse = {
   clientSecret: string;
 };
 
+type ReceiptItem = {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+};
+
+type ReceiptDetails = {
+  orderId: string;
+  items: ReceiptItem[];
+  shippingAmount: number;
+  total: number;
+};
+
 const deliveryMethods = [
   { value: "standard", label: "Standard delivery", amount: 0 },
   { value: "express", label: "Express delivery", amount: 50 },
 ];
+
+const formatReceiptAmount = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+
+function PaymentReceipt({ receipt }: { receipt: ReceiptDetails }) {
+  return (
+    <main className="min-h-[calc(100vh-96px)] bg-[#1f1f1f] px-6 py-7 text-black lg:px-6">
+      <section className="mx-auto flex min-h-[calc(100vh-152px)] w-full max-w-[1128px] flex-col rounded-2xl bg-white px-5 py-8 sm:px-10 lg:px-10">
+        <h1 className="text-xl font-bold leading-tight sm:text-2xl">
+          Payment Confirmed: Order ID {receipt.orderId}
+        </h1>
+
+        <div className="flex flex-1 flex-col items-center justify-center gap-8 py-10">
+          <div className="text-center">
+            <h2 className="text-xl font-bold sm:text-2xl">
+              Thank You For Your Purchase!
+            </h2>
+            <p className="mt-5 text-sm sm:text-base">
+              Your payment was successful. Here is your receipt.
+            </p>
+          </div>
+
+          <div className="w-full max-w-[570px] overflow-hidden rounded-2xl border border-orange-500">
+            <table className="w-full table-fixed text-left text-[10px] sm:text-sm">
+              <thead>
+                <tr className="border-b border-orange-500 bg-white">
+                  <th className="px-4 py-4 font-bold sm:px-5">Item</th>
+                  <th className="px-2 py-4 text-center font-bold sm:px-5">
+                    Quantity
+                  </th>
+                  <th className="px-2 py-4 text-center font-bold sm:px-5">
+                    Unit Price
+                  </th>
+                  <th className="px-4 py-4 text-right font-bold sm:px-5">
+                    Total
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipt.items.map((item) => (
+                  <tr
+                    key={`${item.name}-${item.quantity}-${item.unitPrice}`}
+                    className="border-b border-orange-500/70"
+                  >
+                    <td className="px-4 py-5 sm:px-5">{item.name}</td>
+                    <td className="px-2 py-5 text-center sm:px-5">
+                      {item.quantity}
+                    </td>
+                    <td className="px-2 py-5 text-center sm:px-5">
+                      {formatReceiptAmount(item.unitPrice)}
+                    </td>
+                    <td className="px-4 py-5 text-right sm:px-5">
+                      {formatReceiptAmount(item.quantity * item.unitPrice)}
+                    </td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className="px-4 pt-5 sm:px-5">Shipping Cost</td>
+                  <td />
+                  <td />
+                  <td className="px-4 pt-5 text-right sm:px-5">
+                    {formatReceiptAmount(receipt.shippingAmount)}
+                  </td>
+                </tr>
+                <tr className="font-bold">
+                  <td className="px-4 pb-5 pt-4 sm:px-5">Total</td>
+                  <td />
+                  <td />
+                  <td className="px-4 pb-5 pt-4 text-right sm:px-5">
+                    {formatReceiptAmount(receipt.total)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p className="max-w-[520px] text-center text-sm sm:text-base">
+            Once we get tracking number, we will notify you again via email
+          </p>
+
+          <div className="flex items-center gap-3 text-sm sm:text-base">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
+              logo
+            </span>
+            <span>UGC</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
 
 type PaymentFormProps = {
   orderId: string;
@@ -117,7 +223,6 @@ function PaymentForm({ orderId, onPaid }: PaymentFormProps) {
 }
 
 export default function PaymentPage() {
-  const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   const checkoutKeyRef = useRef(
     globalThis.crypto?.randomUUID?.() ??
@@ -138,7 +243,7 @@ export default function PaymentPage() {
   const [checkoutInit, setCheckoutInit] = useState<CheckoutInitResponse | null>(
     null,
   );
-  const [paid, setPaid] = useState(false);
+  const [receipt, setReceipt] = useState<ReceiptDetails | null>(null);
   const formatTHB = (value: number) => `THB ${value.toFixed(2)}`;
 
   const canStartPayment =
@@ -220,26 +325,8 @@ export default function PaymentPage() {
     }
   };
 
-  if (paid) {
-    return (
-      <main className="px-6 py-10 text-white lg:px-16">
-        <div className="mx-auto max-w-xl rounded-2xl border border-orange70 bg-surface/5 backdrop-blur-3xl p-8 text-center">
-          <h1 className="text-3xl font-bold text-primary">
-            Payment Successful
-          </h1>
-          <p className="mt-3 text-gray-200">
-            Your order has been paid. Thank you for shopping with us.
-          </p>
-          <button
-            type="button"
-            className="mt-6 rounded-xl bg-orange-500 px-6 py-3 font-semibold"
-            onClick={() => router.push("/cards")}
-          >
-            Continue shopping
-          </button>
-        </div>
-      </main>
-    );
+  if (receipt) {
+    return <PaymentReceipt receipt={receipt} />;
   }
 
   return (
@@ -277,7 +364,11 @@ export default function PaymentPage() {
                   className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 outline-none"
                 >
                   {deliveryMethods.map((method) => (
-                    <option key={method.value} value={method.value} className="bg-surface">
+                    <option
+                      key={method.value}
+                      value={method.value}
+                      className="bg-surface"
+                    >
                       {method.label} - {formatTHB(method.amount)}
                     </option>
                   ))}
@@ -340,8 +431,17 @@ export default function PaymentPage() {
               <PaymentForm
                 orderId={checkoutInit.orderId}
                 onPaid={() => {
+                  setReceipt({
+                    orderId: checkoutInit.orderId,
+                    items: items.map((item) => ({
+                      name: item.card.name,
+                      quantity: item.quantity,
+                      unitPrice: item.card.price,
+                    })),
+                    shippingAmount: checkoutInit.shippingAmount,
+                    total: checkoutInit.amount,
+                  });
                   clearCart();
-                  setPaid(true);
                 }}
               />
             </Elements>
@@ -351,32 +451,29 @@ export default function PaymentPage() {
         <aside className="rounded-2xl border border-white/10 bg-surface p-6 min-h-52.5">
           <h2 className="mb-4 text-xl font-bold">Order Summary</h2>
           <div className="space-y-3 text-sm text-gray-300">
-            <p>Items: {items.length}</p>
+            {/* <p>Items: {items.length}</p>
             <p>
               Total quantity:{" "}
               {items.reduce((sum, item) => sum + item.quantity, 0)}
-            </p>
+            </p> */}
             {items.length > 0 && (
               <div className="max-h-64 space-y-2 overflow-auto rounded-xl border border-white/10 bg-black/20 p-3">
-                {items.map((item) => {
-                  const lineTotal = item.quantity * item.card.price;
-                  return (
-                    <div
-                      key={item.cardId}
-                      className="rounded-lg border border-white/10 bg-white/5 p-2"
-                    >
-                      <p className="text-sm font-semibold text-white">
+                {items.map((item) => (
+                  <div key={item.cardId} className="flex flex-col gap-2">
+                    <p className="text-sm font-semibold text-orange70">
+                      card name:{" "}
+                      <span className="pl-2 text-sm font-semibold text-white">
                         {item.card.name}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Qty: {item.quantity} x {formatTHB(item.card.price)}
-                      </p>
-                      <p className="text-xs font-semibold text-orange-300">
-                        Item total: {formatTHB(lineTotal)}
-                      </p>
-                    </div>
-                  );
-                })}
+                      </span>
+                    </p>
+                    <p className="text-xs text-orange70">
+                      Qty:
+                      <span className="pl-2 text-sm font-semibold text-white">
+                        {item.quantity} x {formatTHB(item.card.price)}
+                      </span>
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
             <p className="pt-1 text-base font-semibold text-white">
@@ -385,8 +482,9 @@ export default function PaymentPage() {
             <p>
               Shipping:{" "}
               {formatTHB(
-                deliveryMethods.find((method) => method.value === deliveryMethod)
-                  ?.amount ?? 0,
+                deliveryMethods.find(
+                  (method) => method.value === deliveryMethod,
+                )?.amount ?? 0,
               )}
             </p>
             <p className="pt-1 text-base font-semibold text-white">

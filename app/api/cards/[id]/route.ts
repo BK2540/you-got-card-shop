@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { CardStatus } from "@prisma/client";
+import { CardStatus, Prisma } from "@prisma/client";
 import { getAuthFromRequest } from "@/lib/auth-server";
 import {
   destroyImageByPublicId,
@@ -81,27 +81,76 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  const existingImages = await prisma.cardImage.findMany({
-    where: { cardId: id },
-    select: {
-      url: true,
-      publicId: true,
-    },
-  });
 
-  const publicIds = existingImages
-    .map((image) => image.publicId || extractPublicIdFromUrl(image.url))
-    .filter((publicId): publicId is string => Boolean(publicId));
+  try {
+    const existingCard = await prisma.card.findUnique({
+      where: { id },
+      select: {
+        images: {
+          select: {
+            url: true,
+            publicId: true,
+          },
+        },
+        _count: {
+          select: {
+            orderItems: true,
+          },
+        },
+      },
+    });
 
-  await Promise.allSettled(
-    publicIds.map((publicId) => destroyImageByPublicId(publicId)),
-  );
+    if (!existingCard) {
+      return NextResponse.json({ error: "Card not found" }, { status: 404 });
+    }
 
-  await prisma.card.delete({
-    where: { id },
-  });
+    if (existingCard._count.orderItems > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "This card is attached to order history and cannot be deleted. Mark it inactive or out of stock instead.",
+        },
+        { status: 409 },
+      );
+    }
 
-  return NextResponse.json({ success: true });
+    const publicIds = existingCard.images
+      .map((image) => image.publicId || extractPublicIdFromUrl(image.url))
+      .filter((publicId): publicId is string => Boolean(publicId));
+
+    await prisma.$transaction([
+      prisma.homeContent.updateMany({
+        where: { featuredId: id },
+        data: { featuredId: null },
+      }),
+      prisma.card.delete({
+        where: { id },
+      }),
+    ]);
+
+    await Promise.allSettled(
+      publicIds.map((publicId) => destroyImageByPublicId(publicId)),
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete card", error);
+
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2003"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "This card is still referenced by another record and cannot be deleted.",
+        },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
 }
 
 // UPDATE

@@ -122,9 +122,26 @@ export async function createCard(data: FormData) {
 }
 
 export async function deleteCard(id: string) {
-  await fetch(`/api/cards/${id}`, {
+  const res = await fetch(`/api/cards/${id}`, {
     method: "DELETE",
   });
+
+  const text = await res.text();
+  let payload: { error?: string } | null = null;
+
+  if (text) {
+    try {
+      payload = JSON.parse(text) as { error?: string };
+    } catch {
+      payload = null;
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(payload?.error ?? "Failed to delete card");
+  }
+
+  return payload;
 }
 
 

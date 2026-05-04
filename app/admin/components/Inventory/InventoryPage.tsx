@@ -103,6 +103,9 @@ const defaultMetaState: Omit<PaginatedCardsResponse, "items"> = {
   recommendation: "ALL",
 };
 
+const isKnownMissingLocalUpload = (url: string) =>
+  url.startsWith("/uploads/cards/");
+
 const dialogSx = {
   "& .MuiDialog-paper": {
     backgroundColor: "#1a1a1a",
@@ -126,6 +129,7 @@ const InventoryPage = ({
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [inventoryQuery, setInventoryQuery] = useState(defaultQueryState);
   const [inventoryMeta, setInventoryMeta] = useState(defaultMetaState);
+  const [deleteError, setDeleteError] = useState("");
   const imageInputRef = useRef<HTMLInputElement>(null);
   const imagePreviewsRef = useRef<UploadPreview[]>([]);
 
@@ -288,9 +292,17 @@ const InventoryPage = ({
   };
 
   const handleDelete = async (id: string) => {
-    await deleteCard(id);
-    await fetchInventoryCards(inventoryQuery);
-    await onChanged?.();
+    setDeleteError("");
+
+    try {
+      await deleteCard(id);
+      await fetchInventoryCards(inventoryQuery);
+      await onChanged?.();
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error ? error.message : "Failed to delete card",
+      );
+    }
   };
 
   const handleCloseDialog = () => {
@@ -456,14 +468,20 @@ const InventoryPage = ({
             <CloseIcon fontSize="small" />
           </button>
 
-          <Image
-            src={preview.url}
-            alt={preview.fileName}
-            width={176}
-            height={112}
-            unoptimized
-            className="h-28 w-full object-cover"
-          />
+          {!isKnownMissingLocalUpload(preview.url) ? (
+            <Image
+              src={preview.url}
+              alt={preview.fileName}
+              width={176}
+              height={112}
+              unoptimized
+              className="h-28 w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-28 w-full items-center justify-center bg-white/5 px-3 text-center text-xs text-gray-500">
+              Missing uploaded image
+            </div>
+          )}
           <p className="truncate px-2 py-1 text-xs text-gray-300">
             {index === 0 ? `${preview.fileName} (hero)` : preview.fileName}
           </p>
@@ -850,6 +868,12 @@ const InventoryPage = ({
             </div>
           </div>
 
+          {deleteError && (
+            <div className="mb-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {deleteError}
+            </div>
+          )}
+
           <div className="overflow-hidden rounded-2xl border border-white/8">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1040px] text-sm">
@@ -938,13 +962,20 @@ const InventoryPage = ({
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             <div className="h-14 w-12 overflow-hidden rounded-lg border border-white/10 bg-white/5">
-                              <Image
-                                src={card.image || ""}
-                                alt={card.name}
-                                width={48}
-                                height={56}
-                                className="h-full w-full object-cover"
-                              />
+                              {card.image &&
+                              !isKnownMissingLocalUpload(card.image) ? (
+                                <Image
+                                  src={card.image}
+                                  alt={card.name}
+                                  width={48}
+                                  height={56}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-white/5 text-xs font-semibold text-gray-500">
+                                  {card.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
                             </div>
                             <div>
                               <p className="font-semibold text-white">

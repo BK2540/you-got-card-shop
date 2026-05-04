@@ -22,25 +22,96 @@ export const sendRegistrationEmail = async (input: {
   const subject = "Welcome to You Got Card Shop";
 
   const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
-      <h2 style="margin-bottom: 8px;">Welcome, ${safeName}!</h2>
-      <p style="margin-top: 0;">
-        Your account is now active at <strong>You Got Card Shop</strong>.
-      </p>
-      <p>
-        You can now browse cards, checkout, and track your future orders.
-      </p>
-      <p>Thank you for joining us.</p>
-    </div>
+    <!doctype html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+          @media only screen and (max-width: 520px) {
+            .welcome-shell {
+              padding: 16px 14px !important;
+            }
+            .welcome-card {
+              min-height: 540px !important;
+              padding: 36px 26px !important;
+              border-color: #ffffff !important;
+            }
+            .welcome-title {
+              font-size: 20px !important;
+            }
+            .welcome-content {
+              padding-top: 104px !important;
+            }
+            .welcome-heading {
+              font-size: 14px !important;
+            }
+            .welcome-copy {
+              max-width: 230px !important;
+              font-size: 13px !important;
+              line-height: 1.25 !important;
+            }
+            .welcome-thanks {
+              padding-top: 90px !important;
+            }
+          }
+        </style>
+      </head>
+      <body style="margin: 0; padding: 0; background: #1f1f1f;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: #1f1f1f; border-collapse: collapse;">
+          <tr>
+            <td class="welcome-shell" style="padding: 16px 12px; font-family: Arial, sans-serif; color: #111111;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="welcome-card" style="max-width: 1128px; min-height: 580px; margin: 0 auto; background: #ffffff; border: 2px solid #2f80ed; border-radius: 18px; border-collapse: separate;">
+                <tr>
+                  <td style="padding: 36px 42px; vertical-align: top;">
+                    <h1 class="welcome-title" style="margin: 0; font-size: 20px; line-height: 1.2; font-weight: 700;">
+                      Welcome, ${safeName}
+                    </h1>
+
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="welcome-content" style="padding-top: 58px; border-collapse: collapse;">
+                      <tr>
+                        <td align="center">
+                          <h2 class="welcome-heading" style="margin: 0; font-size: 20px; line-height: 1.25; font-weight: 700;">
+                            Your account is now active at UGC!
+                          </h2>
+                          <p class="welcome-copy" style="max-width: 460px; margin: 18px auto 0; font-size: 14px; line-height: 1.45;">
+                            You can now browse cards, checkout, and track your future orders.
+                          </p>
+
+                          <div class="welcome-thanks" style="padding-top: 88px; font-size: 14px;">
+                            Thank you for joining us
+                          </div>
+
+                          <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 18px auto 0; border-collapse: collapse;">
+                            <tr>
+                              <td style="width: 32px; height: 32px; border-radius: 999px; background: #f45a2a; color: #ffffff; font-size: 12px; font-weight: 700; text-align: center; vertical-align: middle;">
+                                logo
+                              </td>
+                              <td style="padding-left: 10px; font-size: 14px; vertical-align: middle;">
+                                UGC
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
   `;
 
   const text = [
-    `Welcome, ${input.name.trim() || "there"}!`,
+    `Welcome, ${input.name.trim() || "there"}`,
     "",
-    "Your account is now active at You Got Card Shop.",
+    "Your account is now active at UGC!",
     "You can now browse cards, checkout, and track your future orders.",
     "",
-    "Thank you for joining us.",
+    "Thank you for joining us",
+    "UGC",
   ].join("\n");
 
   return sendEmail({

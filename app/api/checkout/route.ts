@@ -72,8 +72,16 @@ export async function POST(req: Request) {
     });
 
     if (cards.length !== normalizedItems.length) {
+      const foundCardIds = new Set(cards.map((card) => card.id));
+      const missingCardIds = normalizedItems
+        .map((item) => item.cardId)
+        .filter((cardId) => !foundCardIds.has(cardId));
+
       return NextResponse.json(
-        { error: "Some cards are no longer available" },
+        {
+          error: "Some cards are no longer available",
+          missingCardIds,
+        },
         { status: 400 },
       );
     }

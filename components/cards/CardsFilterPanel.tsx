@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 
 type CardsFilterPanelProps = {
@@ -31,6 +31,10 @@ const ChevronIcon = ({ open }: { open: boolean }) => (
   </svg>
 );
 
+const subscribeToHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export default function CardsFilterPanel({
   search,
   playerName,
@@ -44,6 +48,11 @@ export default function CardsFilterPanel({
   grades,
 }: CardsFilterPanelProps) {
   const [open, setOpen] = useState(true);
+  const mounted = useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerSnapshot,
+  );
 
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5 p-4 md:p-5">
@@ -58,7 +67,7 @@ export default function CardsFilterPanel({
         </button>
       </div>
 
-      {open && (
+      {open && mounted && (
         <form
           method="GET"
           className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
