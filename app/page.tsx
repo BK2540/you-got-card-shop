@@ -15,12 +15,12 @@ type HomeContentResponse = {
   subtitle: string;
   description: string;
   price: number;
-  team: string;
   featuredId?: string | null;
   featured?: {
     id: string;
     name: string;
     playerName: string;
+    team: string;
     image: string;
     grade: string;
     printRun?: string | null;
@@ -127,7 +127,7 @@ export default function Home() {
     ? `${homeContent.featured.playerName} ${homeContent.featured.name}`.toUpperCase()
     : "ZION WILLIAMSON";
   const heroGrade = homeContent?.featured?.grade || "No data";
-  const heroTeam = homeContent?.team || "No data";
+  const heroTeam = homeContent?.featured?.team || "No data";
   const featuredCard =
     cards.find((card) => card.id === homeContent?.featuredId) ??
     cards.find((card) => card.id === homeContent?.featured?.id) ??
@@ -135,14 +135,8 @@ export default function Home() {
 
   return (
     <section className="min-h-screen flex flex-col px-6 lg:px-16 py-12 gap-25">
-      <section className="w-full h-full flex flex-col lg:flex-row items-center justify-between">
-        <div className="flex-1 flex flex-col gap-6 text-center lg:text-left">
-          {/* <div className="flex items-center gap-4 justify-center lg:justify-start">
-            <span className="px-3 py-1 text-xs rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
-              LEGENDARY DROP
-            </span>
-          </div> */}
-
+      <section className="w-full h-full flex flex-col lg:flex-row items-center gap-6 justify-between">
+        <div className="flex-1 flex flex-col gap-6 text-center lg:text-left  w-full">
           <h1 className="text-5xl lg:text-7xl font-extrabold leading-tight">
             <span className="text-white">{heroTitle}</span> <br />
             <span className="bg-linear-to-b from-orange-300 via-orange-400 to-orange-700 bg-clip-text text-transparent">
@@ -150,11 +144,11 @@ export default function Home() {
             </span>
           </h1>
 
-          <p className="text-white max-w-xl mx-auto lg:mx-0">
+          <p className="text-white max-w-xl mx-auto lg:mx-0 text-xs md:text-sm wrap-break-word">
             {heroDescription}
           </p>
 
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl max-w-md mx-auto lg:mx-0">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl max-w-md mx-auto lg:mx-0 w-full">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-orange70">PSA Grade</p>
@@ -200,7 +194,7 @@ export default function Home() {
         <div className="flex-1 flex justify-center items-center relative mt-12">
           <div className="absolute w-75 h-100 bg-black/50 blur-3xl translate-x-6 translate-y-10 rounded-3xl" />
 
-          <div className="relative w-full max-w-100 h-150 rounded-3xl overflow-hidden bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl rotate-6 hover:rotate-0 transition duration-500">
+          <div className="relative w-full max-w-100 lg:max-h-150 rounded-3xl overflow-hidden bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl rotate-6 hover:rotate-0 transition duration-500">
             <Image
               src={heroImage}
               alt={featuredLabel}

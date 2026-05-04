@@ -1,12 +1,14 @@
 "use client";
 
 import CardItem from "@/components/CardItem";
+import CustomButton from "@/components/CustomButton";
 import { useCart } from "@/hooks/useCart";
 import { getCards } from "@/lib/api/cards";
 import { Card } from "@/types";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import Image from "next/image";
 import { use, useEffect, useRef, useState } from "react";
-import CustomButton from "@/components/CustomButton";
 
 export default function CardDetail({
   params,
@@ -21,7 +23,7 @@ export default function CardDetail({
   const [selectedImages, setSelectedImages] = useState<Record<string, string>>(
     {},
   );
-  const card = cards.find((c) => c.id === id);
+  const card = cards.find((currentCard) => currentCard.id === id);
   const heroImage =
     card?.images.find((image) => image.isHero)?.url ?? card?.image ?? "";
   const selectedImage = card ? (selectedImages[card.id] ?? heroImage) : "";
@@ -87,28 +89,30 @@ export default function CardDetail({
     setActiveSlide((current) => (current + 1) % cards.length);
   };
 
-  if (isLoading) return <div className="p-8">Loading...</div>;
-  if (!card) return <div className="p-8">Not found</div>;
+  if (isLoading) {
+    return <div className="p-8">Loading...</div>;
+  }
+
+  if (!card) {
+    return <div className="p-8">Not found</div>;
+  }
 
   return (
-    <div className="px-6 lg:px-16 py-10 text-white">
-      {/* 🔥 MAIN SECTION */}
-      <div className="flex flex-col lg:flex-row gap-10">
-        {/* 🖼 LEFT: IMAGE + THUMB */}
-        <div className="flex-1 flex flex-col items-center lg:items-start gap-4">
-          {/* main image */}
-          <div className="h-[600px] w-full max-w-[400px] rounded-2xl border border-white/10 bg-white/5 shadow-2xl overflow-hidden">
+    <div className="px-4 py-10 text-white sm:px-6 lg:px-16">
+      <div className="flex flex-col gap-10 lg:flex-row">
+        <div className="flex flex-1 flex-col items-center gap-4 lg:items-start">
+          <div className="aspect-[2/3] w-full max-w-[min(100%,400px)] overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl">
             <Image
               src={selectedImage || card.image}
               alt={card.name}
               width={400}
               height={600}
+              sizes="(max-width: 640px) 92vw, 400px"
               className="h-full w-full object-cover"
             />
           </div>
 
-          {/* thumbnails */}
-          <div className="flex gap-3">
+          <div className="flex w-full max-w-[400px] gap-3 overflow-x-auto pb-1">
             {card.images.map((image) => (
               <button
                 key={image.id}
@@ -119,7 +123,7 @@ export default function CardDetail({
                     [card.id]: image.url,
                   }))
                 }
-                className={`overflow-hidden rounded-lg border ${
+                className={`shrink-0 overflow-hidden rounded-lg border ${
                   selectedImage === image.url
                     ? "border-orange-500"
                     : "border-white/10"
@@ -137,33 +141,19 @@ export default function CardDetail({
           </div>
         </div>
 
-        {/* 📊 RIGHT: INFO */}
-        <div className="flex-1 flex flex-col gap-6">
-          {/* title */}
+        <div className="flex flex-1 flex-col gap-6">
           <div>
-            <h1 className="text-3xl lg:text-5xl font-bold">
+            <h1 className="text-3xl font-bold lg:text-5xl">
               {card.playerName}
             </h1>
             <p className="mt-1 text-base text-gray-300">{card.name}</p>
           </div>
 
-          {/* price */}
-          <div className="bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-xl">
-            <p className="text-orange70 text-base">CURRENT VALUE</p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl sm:p-6">
+            <p className="text-base text-orange70">CURRENT VALUE</p>
             <p className="text-3xl font-bold">${card.price}</p>
 
-            <div className="flex gap-3 mt-4">
-              {/* <button className="flex-1 bg-linear-to-r from-orange-500 to-orange-600 py-3 rounded-xl font-semibold hover:scale-105 transition">
-                BUY IT NOW
-              </button> */}
-
-              {/* <button
-                className="flex-1 bg-white/10 border border-white/10 py-3 rounded-xl hover:bg-white/20 transition"
-                onClick={() => addToCart(card, 1)}
-                disabled={card.status !== "ACTIVE" || card.quantity < 1}
-              >
-                ADD TO CART
-              </button> */}
+            <div className="mt-4 flex gap-3">
               <CustomButton
                 title="Add to cart"
                 onClick={() => addToCart(card, 1)}
@@ -172,26 +162,25 @@ export default function CardDetail({
             </div>
           </div>
 
-          {/* specs */}
-          <div className="text-sm grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
             <div>
-              <p className="text-orange70 text-base">TEAM</p>
-              <p className="text-white text-xl font-bold">{card.team}</p>
+              <p className="text-base text-orange70">TEAM</p>
+              <p className="text-xl font-bold text-white">{card.team}</p>
             </div>
 
             <div>
-              <p className="text-orange70 text-base">GRADE</p>
-              <p className="text-white text-xl font-bold">{card.grade}</p>
+              <p className="text-base text-orange70">GRADE</p>
+              <p className="text-xl font-bold text-white">{card.grade}</p>
             </div>
 
             <div>
-              <p className="text-orange70 text-base">YEAR</p>
-              <p className="text-white text-xl font-bold">{card.year}</p>
+              <p className="text-base text-orange70">YEAR</p>
+              <p className="text-xl font-bold text-white">{card.year}</p>
             </div>
 
             <div>
-              <p className="text-orange70 text-base">TYPE</p>
-              <p className="text-white text-xl font-bold">
+              <p className="text-base text-orange70">TYPE</p>
+              <p className="text-xl font-bold text-white">
                 {card.isRecommended
                   ? "Recommended"
                   : card.isNewArrival
@@ -201,8 +190,8 @@ export default function CardDetail({
             </div>
 
             <div>
-              <p className="text-orange70 text-base">PRINT RUN</p>
-              <p className="text-white text-xl font-bold">
+              <p className="text-base text-orange70">PRINT RUN</p>
+              <p className="text-xl font-bold text-white">
                 {card.printRun || "N/A"}
               </p>
             </div>
@@ -210,50 +199,50 @@ export default function CardDetail({
         </div>
       </div>
 
-      {/* 🔥 RELATED SECTION */}
       <div className="mt-16">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6 flex items-center justify-between gap-4">
           <h2 className="text-xl font-bold">Related in the Vault</h2>
           {cards.length > 3 && (
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={showPreviousSlide}
-                className="h-11 w-11 rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10"
                 aria-label="Show previous card"
               >
-                ←
+                <ArrowBackOutlinedIcon fontSize="small" />
               </button>
               <button
                 type="button"
                 onClick={showNextSlide}
-                className="h-11 w-11 rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10"
                 aria-label="Show next card"
               >
-                →
+                <ArrowForwardOutlinedIcon fontSize="small" />
               </button>
             </div>
           )}
         </div>
+
         <div
           ref={carouselRef}
           className="flex snap-x snap-mandatory gap-4 overflow-x-hidden scroll-smooth"
         >
-          {cards.map((card) => (
+          {cards.map((relatedCard) => (
             <div
-              key={card.id}
+              key={relatedCard.id}
               className="min-w-full snap-center md:min-w-[calc(50%-2rem)] xl:min-w-[calc(30%-0.2rem)]"
             >
-              <CardItem card={card} />
+              <CardItem card={relatedCard} />
             </div>
           ))}
         </div>
 
         {cards.length > 1 && (
-          <div className="flex items-center justify-center gap-2 my-6">
-            {cards.map((card, index) => (
+          <div className="my-6 flex items-center justify-center gap-2">
+            {cards.map((relatedCard, index) => (
               <button
-                key={card.id}
+                key={relatedCard.id}
                 type="button"
                 onClick={() => goToSlide(index)}
                 className={`h-2.5 rounded-full transition-all ${

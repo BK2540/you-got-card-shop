@@ -79,10 +79,10 @@ export default async function CardsPage({ searchParams }: PageProps) {
   };
 
   const sectionTitleClass =
-    "bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent text-3xl lg:text-4xl font-bold";
+    "bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent text-2xl sm:text-3xl lg:text-4xl font-bold";
 
   return (
-    <main className="space-y-10 px-6 py-10 text-white lg:px-16">
+    <main className="space-y-10 px-4 py-10 text-white sm:px-6 lg:px-16">
       <CardsFilterPanel
         search={search}
         playerName={playerName}
@@ -123,7 +123,7 @@ export default async function CardsPage({ searchParams }: PageProps) {
         {paginatedCards.length === 0 ? (
           <p className="text-sm text-gray-400">No cards match your filters.</p>
         ) : (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
             {paginatedCards.map((card: Card) => (
               <CardItem key={card.id} card={card} />
             ))}

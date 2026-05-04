@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import LocalGroceryStoreOutlinedIcon from "@mui/icons-material/LocalGroceryStoreOutlined";
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
+import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -170,7 +172,11 @@ const Navbar = () => {
           className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-white lg:hidden"
           aria-label="Toggle navigation"
         >
-          {openMobileMenu ? "✕" : "☰"}
+          {openMobileMenu ? (
+            <CloseOutlinedIcon fontSize="small" />
+          ) : (
+            <MenuOutlinedIcon fontSize="small" />
+          )}
         </button>
       </div>
 
