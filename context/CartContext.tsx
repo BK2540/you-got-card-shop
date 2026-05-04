@@ -34,6 +34,7 @@ import { createContext, useEffect, useMemo, useState } from "react";
 import type { Card, CartItem } from "@/types";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import AppNotification from "@/components/AppNotification";
 
 type CartContextValue = {
   items: CartItem[];
@@ -52,6 +53,7 @@ const STORAGE_KEY_PREFIX = "vault-cart";
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
+  const [cartNotice, setCartNotice] = useState<string>("");
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -122,6 +124,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       return [...prev, { cardId: card.id, quantity: safeQty, card }];
     });
+    setCartNotice(`${card.name} is in your cart.`);
   };
 
   const removeFromCart = (cardId: string) => {
@@ -176,6 +179,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+      <AppNotification
+        open={Boolean(cartNotice)}
+        message={cartNotice}
+        tone="success"
+        onClose={() => setCartNotice("")}
+      />
     </CartContext.Provider>
   );
 }

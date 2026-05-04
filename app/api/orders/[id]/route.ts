@@ -76,6 +76,7 @@ export async function PATCH(
                 id: true,
                 name: true,
                 playerName: true,
+                team: true,
               },
             },
           },

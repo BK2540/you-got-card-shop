@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import {
   Elements,
@@ -59,12 +60,22 @@ function PaymentResult({ status }: { status: "success" | "failed" }) {
           {isSuccess ? "Payment Successful" : "Payment Failed"}
         </h1>
         <ResultIcon status={status} />
-        <Link
-          href={isSuccess ? "/" : "/cart"}
-          className="mt-6 rounded-full bg-orange-400 px-4 py-2 text-sm xl:text-base font-semibold text-white transition hover:bg-orange-500"
-        >
-          {isSuccess ? "Back to Home" : "Back to Cart"}
-        </Link>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          {isSuccess && (
+            <Link
+              href="/profile"
+              className="rounded-full bg-orange-400 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500 xl:text-base"
+            >
+              View Orders
+            </Link>
+          )}
+          <Link
+            href={isSuccess ? "/" : "/cart"}
+            className="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 xl:text-base"
+          >
+            {isSuccess ? "Back to Home" : "Back to Cart"}
+          </Link>
+        </div>
       </section>
     </main>
   );
@@ -163,14 +174,15 @@ function PaymentForm({ orderId, onPaid, onFailed }: PaymentFormProps) {
 
 export default function PaymentPage() {
   const { items, subtotal, clearCart } = useCart();
+  const { user } = useAuth();
   const checkoutKeyRef = useRef(
     globalThis.crypto?.randomUUID?.() ??
       `${Date.now()}-${Math.random().toString(36).slice(2)}`,
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerName, setCustomerName] = useState(user?.name ?? "");
+  const [customerEmail, setCustomerEmail] = useState(user?.email ?? "");
   const [customerPhone, setCustomerPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
@@ -186,6 +198,16 @@ export default function PaymentPage() {
     "success" | "failed" | null
   >(null);
   const formatTHB = (value: number) => `THB ${value.toFixed(2)}`;
+
+  useEffect(() => {
+    if (user?.name && !customerName) {
+      setCustomerName(user.name);
+    }
+
+    if (user?.email && !customerEmail) {
+      setCustomerEmail(user.email);
+    }
+  }, [customerEmail, customerName, user?.email, user?.name]);
 
   const canStartPayment =
     items.length > 0 &&
