@@ -61,8 +61,8 @@ export const sendRegistrationEmail = async (input: {
           }
         </style>
       </head>
-      <body style="margin: 0; padding: 0; background: #1f1f1f;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: #1f1f1f; border-collapse: collapse;">
+      <body style="margin: 0; padding: 0; background: transparent;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: transparent; border-collapse: collapse;">
           <tr>
             <td class="welcome-shell" style="padding: 16px 12px; font-family: Arial, sans-serif; color: #111111;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="welcome-card" style="max-width: 1128px; min-height: 580px; margin: 0 auto; background: #ffffff; border: 2px solid #2f80ed; border-radius: 18px; border-collapse: separate;">
@@ -216,8 +216,8 @@ export const sendOrderReceiptEmail = async (input: {
           }
         </style>
       </head>
-      <body style="margin: 0; padding: 0; background: #1f1f1f;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: #1f1f1f; border-collapse: collapse;">
+      <body style="margin: 0; padding: 0; background: transparent;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: transparent; border-collapse: collapse;">
           <tr>
             <td class="receipt-shell" style="padding: 28px 24px; font-family: Arial, sans-serif; color: #000000;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="receipt-card" style="max-width: 1128px; min-height: 740px; margin: 0 auto; background: #ffffff; border-radius: 14px; border-collapse: separate;">
@@ -319,3 +319,4 @@ export const sendOrderReceiptEmail = async (input: {
     text,
   });
 };
+
