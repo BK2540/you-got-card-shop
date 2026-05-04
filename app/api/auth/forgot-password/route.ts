@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { createPasswordResetToken } from "@/lib/auth-store";
 import { sendPasswordResetEmail } from "@/lib/email/templates";
 
-const genericMessage =
-  "If that email is registered, a reset link has been sent.";
-
 const getAppOrigin = (req: Request) => {
   const configuredOrigin =
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
@@ -32,28 +29,42 @@ export async function POST(req: Request) {
 
     const result = await createPasswordResetToken(email);
 
-    if (result.user && result.token) {
-      const resetUrl = `${getAppOrigin(req)}/reset-password?token=${encodeURIComponent(
-        result.token,
-      )}`;
-
-      const emailResult = await sendPasswordResetEmail({
-        name: result.user.name,
-        email: result.user.email,
-        resetUrl,
-      });
-
-      if (!emailResult.ok) {
-        console.error("Failed to send password reset email", {
-          email,
-          error: emailResult.error,
-        });
-      }
+    if (!result.user || !result.token) {
+      return NextResponse.json(
+        { error: "This email has not registered." },
+        { status: 404 },
+      );
     }
 
-    return NextResponse.json({ message: genericMessage });
+    const resetUrl = `${getAppOrigin(req)}/reset-password?token=${encodeURIComponent(
+      result.token,
+    )}`;
+
+    const emailResult = await sendPasswordResetEmail({
+      name: result.user.name,
+      email: result.user.email,
+      resetUrl,
+    });
+
+    if (!emailResult.ok) {
+      console.error("Failed to send password reset email", {
+        email,
+        error: emailResult.error,
+      });
+      return NextResponse.json(
+        { error: "Failed to send reset email. Please try again." },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      message: "Sent reset password link to your email.",
+    });
   } catch (error) {
     console.error("Forgot password failed", error);
-    return NextResponse.json({ message: genericMessage });
+    return NextResponse.json(
+      { error: "Failed to request reset link." },
+      { status: 500 },
+    );
   }
 }

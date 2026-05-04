@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
         throw new Error(data.error ?? "Failed to request reset link.");
       }
 
-      setMessage(data.message ?? "If that email is registered, a reset link has been sent.");
+      setMessage(data.message ?? "Sent reset password link to your email.");
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
       >
         <h1 className="text-2xl font-bold text-white">Forgot password</h1>
         <p className="mt-1 text-sm text-gray-400">
-          Enter your account email and we will send a reset link if the account exists.
+          Enter your registered email and we will send a reset password link.
         </p>
 
         <div className="mt-6">
