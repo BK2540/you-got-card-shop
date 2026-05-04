@@ -1,6 +1,7 @@
 "use client";
 
 import CardItem from "@/components/CardItem";
+import BouncingBallLoader from "@/components/BouncingBallLoader";
 import CustomButton from "@/components/CustomButton";
 import { useCart } from "@/hooks/useCart";
 import { getCards } from "@/lib/api/cards";
@@ -90,7 +91,7 @@ export default function CardDetail({
   };
 
   if (isLoading) {
-    return <div className="p-8">Loading...</div>;
+    return <BouncingBallLoader fullScreen label="Loading card..." />;
   }
 
   if (!card) {
