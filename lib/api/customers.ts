@@ -4,6 +4,7 @@ export type CustomerListItem = {
   id: string;
   name: string;
   email: string;
+  createdAt: string;
   orders: Array<{
     id: string;
     total: number;
@@ -29,6 +30,7 @@ export type CustomerListItem = {
         id: string;
         name: string;
         playerName: string;
+        team: string;
       };
     }>;
   }>;

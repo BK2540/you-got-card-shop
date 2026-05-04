@@ -39,6 +39,7 @@ export type OrderListItem = {
       id: string;
       name: string;
       playerName: string;
+      team: string;
     };
   }>;
 };

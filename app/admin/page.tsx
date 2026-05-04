@@ -216,9 +216,12 @@ export default function AdminPage() {
   if (tab === "dashboard") {
     return (
       <Dashboard
+        cards={cards}
         cardCount={cards.length}
         orderCount={orders.length}
         customerCount={customers.length}
+        orders={orders}
+        customers={customers}
       />
     );
   }
