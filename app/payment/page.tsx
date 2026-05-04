@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
+import Link from "next/link";
 import {
   Elements,
   PaymentElement,
@@ -23,113 +24,45 @@ type CheckoutInitResponse = {
   clientSecret: string;
 };
 
-type ReceiptItem = {
-  name: string;
-  quantity: number;
-  unitPrice: number;
-};
-
-type ReceiptDetails = {
-  orderId: string;
-  items: ReceiptItem[];
-  shippingAmount: number;
-  total: number;
-};
-
 const deliveryMethods = [
   { value: "standard", label: "Standard delivery", amount: 0 },
   { value: "express", label: "Express delivery", amount: 50 },
 ];
 
-const formatReceiptAmount = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value);
+function ResultIcon({ status }: { status: "success" | "failed" }) {
+  if (status === "success") {
+    return (
+      <span className="relative mt-4 h-12 w-12 rounded-full border-2 border-white">
+        <span className="absolute left-[14px] top-[24px] h-0.5 w-3 rotate-45 rounded bg-white" />
+        <span className="absolute left-[21px] top-[21px] h-0.5 w-5 -rotate-45 rounded bg-white" />
+      </span>
+    );
+  }
 
-function PaymentReceipt({ receipt }: { receipt: ReceiptDetails }) {
   return (
-    <main className="min-h-[calc(100vh-96px)] bg-[#1f1f1f] px-6 py-7 text-black lg:px-6">
-      <section className="mx-auto flex min-h-[calc(100vh-152px)] w-full max-w-[1128px] flex-col rounded-2xl bg-white px-5 py-8 sm:px-10 lg:px-10">
-        <h1 className="text-xl font-bold leading-tight sm:text-2xl">
-          Payment Confirmed: Order ID {receipt.orderId}
+    <span className="relative mt-4 h-12 w-12 rounded-full border-2 border-white">
+      <span className="absolute left-[13px] top-[22px] h-0.5 w-5 rotate-45 rounded bg-white" />
+      <span className="absolute left-[13px] top-[22px] h-0.5 w-5 -rotate-45 rounded bg-white" />
+    </span>
+  );
+}
+
+function PaymentResult({ status }: { status: "success" | "failed" }) {
+  const isSuccess = status === "success";
+
+  return (
+    <main className="flex min-h-[calc(100vh-96px)] items-center justify-center px-6 py-10">
+      <section className="flex w-full max-w-[330px] flex-col items-center rounded-xl bg-[#121212] px-8 py-7 text-center shadow-2xl">
+        <h1 className="text-xl font-bold text-white">
+          {isSuccess ? "Payment Successful" : "Payment Failed"}
         </h1>
-
-        <div className="flex flex-1 flex-col items-center justify-center gap-8 py-10">
-          <div className="text-center">
-            <h2 className="text-xl font-bold sm:text-2xl">
-              Thank You For Your Purchase!
-            </h2>
-            <p className="mt-5 text-sm sm:text-base">
-              Your payment was successful. Here is your receipt.
-            </p>
-          </div>
-
-          <div className="w-full max-w-[570px] overflow-hidden rounded-2xl border border-orange-500">
-            <table className="w-full table-fixed text-left text-[10px] sm:text-sm">
-              <thead>
-                <tr className="border-b border-orange-500 bg-white">
-                  <th className="px-4 py-4 font-bold sm:px-5">Item</th>
-                  <th className="px-2 py-4 text-center font-bold sm:px-5">
-                    Quantity
-                  </th>
-                  <th className="px-2 py-4 text-center font-bold sm:px-5">
-                    Unit Price
-                  </th>
-                  <th className="px-4 py-4 text-right font-bold sm:px-5">
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {receipt.items.map((item) => (
-                  <tr
-                    key={`${item.name}-${item.quantity}-${item.unitPrice}`}
-                    className="border-b border-orange-500/70"
-                  >
-                    <td className="px-4 py-5 sm:px-5">{item.name}</td>
-                    <td className="px-2 py-5 text-center sm:px-5">
-                      {item.quantity}
-                    </td>
-                    <td className="px-2 py-5 text-center sm:px-5">
-                      {formatReceiptAmount(item.unitPrice)}
-                    </td>
-                    <td className="px-4 py-5 text-right sm:px-5">
-                      {formatReceiptAmount(item.quantity * item.unitPrice)}
-                    </td>
-                  </tr>
-                ))}
-                <tr>
-                  <td className="px-4 pt-5 sm:px-5">Shipping Cost</td>
-                  <td />
-                  <td />
-                  <td className="px-4 pt-5 text-right sm:px-5">
-                    {formatReceiptAmount(receipt.shippingAmount)}
-                  </td>
-                </tr>
-                <tr className="font-bold">
-                  <td className="px-4 pb-5 pt-4 sm:px-5">Total</td>
-                  <td />
-                  <td />
-                  <td className="px-4 pb-5 pt-4 text-right sm:px-5">
-                    {formatReceiptAmount(receipt.total)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <p className="max-w-[520px] text-center text-sm sm:text-base">
-            Once we get tracking number, we will notify you again via email
-          </p>
-
-          <div className="flex items-center gap-3 text-sm sm:text-base">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
-              logo
-            </span>
-            <span>UGC</span>
-          </div>
-        </div>
+        <ResultIcon status={status} />
+        <Link
+          href={isSuccess ? "/" : "/cart"}
+          className="mt-6 rounded-full bg-orange-400 px-4 py-2 text-xs font-semibold text-white transition hover:bg-orange-500"
+        >
+          {isSuccess ? "Back to Home" : "Back to Cart"}
+        </Link>
       </section>
     </main>
   );
@@ -138,13 +71,20 @@ function PaymentReceipt({ receipt }: { receipt: ReceiptDetails }) {
 type PaymentFormProps = {
   orderId: string;
   onPaid: () => void;
+  onFailed: (message: string) => void;
 };
 
-function PaymentForm({ orderId, onPaid }: PaymentFormProps) {
+function PaymentForm({ orderId, onPaid, onFailed }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+
+  const failPayment = (message: string) => {
+    setError(message);
+    setLoading(false);
+    onFailed(message);
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -169,8 +109,7 @@ function PaymentForm({ orderId, onPaid }: PaymentFormProps) {
     });
 
     if (result.error) {
-      setError(result.error.message ?? "Payment failed");
-      setLoading(false);
+      failPayment(result.error.message ?? "Payment failed");
       return;
     }
 
@@ -186,8 +125,7 @@ function PaymentForm({ orderId, onPaid }: PaymentFormProps) {
 
       const confirmPayload = (await confirmRes.json()) as { error?: string };
       if (!confirmRes.ok) {
-        setError(confirmPayload.error ?? "Failed to finalize order");
-        setLoading(false);
+        failPayment(confirmPayload.error ?? "Failed to finalize order");
         return;
       }
 
@@ -195,8 +133,7 @@ function PaymentForm({ orderId, onPaid }: PaymentFormProps) {
       return;
     }
 
-    setError("Payment requires additional action. Please try again.");
-    setLoading(false);
+    failPayment("Payment requires additional action. Please try again.");
   };
 
   return (
@@ -243,7 +180,9 @@ export default function PaymentPage() {
   const [checkoutInit, setCheckoutInit] = useState<CheckoutInitResponse | null>(
     null,
   );
-  const [receipt, setReceipt] = useState<ReceiptDetails | null>(null);
+  const [paymentResult, setPaymentResult] = useState<
+    "success" | "failed" | null
+  >(null);
   const formatTHB = (value: number) => `THB ${value.toFixed(2)}`;
 
   const canStartPayment =
@@ -325,8 +264,8 @@ export default function PaymentPage() {
     }
   };
 
-  if (receipt) {
-    return <PaymentReceipt receipt={receipt} />;
+  if (paymentResult) {
+    return <PaymentResult status={paymentResult} />;
   }
 
   return (
@@ -431,18 +370,10 @@ export default function PaymentPage() {
               <PaymentForm
                 orderId={checkoutInit.orderId}
                 onPaid={() => {
-                  setReceipt({
-                    orderId: checkoutInit.orderId,
-                    items: items.map((item) => ({
-                      name: item.card.name,
-                      quantity: item.quantity,
-                      unitPrice: item.card.price,
-                    })),
-                    shippingAmount: checkoutInit.shippingAmount,
-                    total: checkoutInit.amount,
-                  });
                   clearCart();
+                  setPaymentResult("success");
                 }}
+                onFailed={() => setPaymentResult("failed")}
               />
             </Elements>
           )}
@@ -451,11 +382,6 @@ export default function PaymentPage() {
         <aside className="rounded-2xl border border-white/10 bg-surface p-6 min-h-52.5">
           <h2 className="mb-4 text-xl font-bold">Order Summary</h2>
           <div className="space-y-3 text-sm text-gray-300">
-            {/* <p>Items: {items.length}</p>
-            <p>
-              Total quantity:{" "}
-              {items.reduce((sum, item) => sum + item.quantity, 0)}
-            </p> */}
             {items.length > 0 && (
               <div className="max-h-64 space-y-2 overflow-auto rounded-xl border border-white/10 bg-black/20 p-3">
                 {items.map((item) => (

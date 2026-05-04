@@ -6,6 +6,11 @@ const money = new Intl.NumberFormat("th-TH", {
   minimumFractionDigits: 2,
 });
 
+const receiptAmount = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
 const escapeHtml = (value: string) =>
   value
     .replaceAll("&", "&amp;")
@@ -134,23 +139,27 @@ export const sendOrderReceiptEmail = async (input: {
     unitPrice: number;
   }>;
 }) => {
-  const safeName = escapeHtml(input.customerName?.trim() || "Customer");
   const paidAt = input.paidAt ?? new Date();
   const paidAtLabel = new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: "Asia/Bangkok",
   }).format(paidAt);
+  const itemSubtotal = input.items.reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0,
+  );
+  const shippingAmount = Math.max(0, input.total - itemSubtotal);
 
   const rowsHtml = input.items
     .map((item) => {
       const name = escapeHtml(item.name);
-      const lineTotal = money.format(item.unitPrice * item.quantity);
+      const lineTotal = receiptAmount.format(item.unitPrice * item.quantity);
       return `<tr>
-        <td style="padding: 8px 6px; border-bottom: 1px solid #eee;">${name}</td>
-        <td style="padding: 8px 6px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 8px 6px; border-bottom: 1px solid #eee; text-align: right;">${money.format(item.unitPrice)}</td>
-        <td style="padding: 8px 6px; border-bottom: 1px solid #eee; text-align: right;">${lineTotal}</td>
+        <td style="padding: 20px 18px; border-bottom: 1px solid #ff6a2a;">${name}</td>
+        <td style="padding: 20px 12px; border-bottom: 1px solid #ff6a2a; text-align: center;">${item.quantity}</td>
+        <td style="padding: 20px 12px; border-bottom: 1px solid #ff6a2a; text-align: center;">${receiptAmount.format(item.unitPrice)}</td>
+        <td style="padding: 20px 18px; border-bottom: 1px solid #ff6a2a; text-align: right;">${lineTotal}</td>
       </tr>`;
     })
     .join("");
@@ -163,47 +172,144 @@ export const sendOrderReceiptEmail = async (input: {
   const subject = `Payment confirmed: Order ${input.orderId}`;
 
   const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
-      <h2 style="margin-bottom: 8px;">Thanks, ${safeName}!</h2>
-      <p style="margin-top: 0;">
-        Your payment was successful. Here is your receipt.
-      </p>
-      <p style="margin: 0;">
-        <strong>Order ID:</strong> ${escapeHtml(input.orderId)}<br />
-        <strong>Paid at:</strong> ${escapeHtml(paidAtLabel)}
-      </p>
-      <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
-        <thead>
+    <!doctype html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+          @media only screen and (max-width: 520px) {
+            .receipt-shell {
+              padding: 16px 14px !important;
+            }
+            .receipt-card {
+              min-height: 540px !important;
+              padding: 28px 12px !important;
+            }
+            .receipt-title {
+              font-size: 20px !important;
+              padding: 0 16px !important;
+            }
+            .receipt-content {
+              padding-top: 72px !important;
+            }
+            .receipt-heading {
+              font-size: 18px !important;
+            }
+            .receipt-copy {
+              font-size: 12px !important;
+            }
+            .receipt-table-wrap {
+              max-width: 100% !important;
+            }
+            .receipt-table {
+              font-size: 10px !important;
+            }
+            .receipt-table th,
+            .receipt-table td {
+              padding-left: 8px !important;
+              padding-right: 8px !important;
+            }
+            .receipt-note {
+              font-size: 12px !important;
+              max-width: 250px !important;
+            }
+          }
+        </style>
+      </head>
+      <body style="margin: 0; padding: 0; background: #1f1f1f;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: #1f1f1f; border-collapse: collapse;">
           <tr>
-            <th style="text-align: left; padding: 8px 6px; border-bottom: 2px solid #ddd;">Item</th>
-            <th style="text-align: center; padding: 8px 6px; border-bottom: 2px solid #ddd;">Qty</th>
-            <th style="text-align: right; padding: 8px 6px; border-bottom: 2px solid #ddd;">Unit Price</th>
-            <th style="text-align: right; padding: 8px 6px; border-bottom: 2px solid #ddd;">Line Total</th>
+            <td class="receipt-shell" style="padding: 28px 24px; font-family: Arial, sans-serif; color: #000000;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="receipt-card" style="max-width: 1128px; min-height: 740px; margin: 0 auto; background: #ffffff; border-radius: 14px; border-collapse: separate;">
+                <tr>
+                  <td style="padding: 36px 40px; vertical-align: top;">
+                    <h1 class="receipt-title" style="margin: 0; font-size: 24px; line-height: 1.25; font-weight: 700;">
+                      Payment Confirmed: Order ID ${escapeHtml(input.orderId)}
+                    </h1>
+
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="receipt-content" style="padding-top: 290px; border-collapse: collapse;">
+                      <tr>
+                        <td align="center">
+                          <h2 class="receipt-heading" style="margin: 0; font-size: 24px; line-height: 1.25; font-weight: 700;">
+                            Thank You For Your Purchase!
+                          </h2>
+                          <p class="receipt-copy" style="margin: 24px 0 0; font-size: 14px; line-height: 1.4;">
+                            Your payment was successful. Here is your receipt.
+                          </p>
+
+                          <table role="presentation" width="570" cellspacing="0" cellpadding="0" class="receipt-table-wrap" style="width: 100%; max-width: 570px; margin: 36px auto 0; border: 1px solid #ff6a2a; border-radius: 16px; border-collapse: separate; overflow: hidden;">
+                            <tr>
+                              <td style="padding: 0;">
+                                <table width="100%" cellspacing="0" cellpadding="0" class="receipt-table" style="border-collapse: collapse; font-size: 14px; color: #000000;">
+                                  <thead>
+                                    <tr>
+                                      <th style="padding: 18px; border-bottom: 1px solid #ff6a2a; text-align: left;">Item</th>
+                                      <th style="padding: 18px 12px; border-bottom: 1px solid #ff6a2a; text-align: center;">Quantity</th>
+                                      <th style="padding: 18px 12px; border-bottom: 1px solid #ff6a2a; text-align: center;">Unit Price</th>
+                                      <th style="padding: 18px; border-bottom: 1px solid #ff6a2a; text-align: right;">Total</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    ${rowsHtml}
+                                    <tr>
+                                      <td style="padding: 20px 18px 8px;">Shipping Cost</td>
+                                      <td></td>
+                                      <td></td>
+                                      <td style="padding: 20px 18px 8px; text-align: right;">${receiptAmount.format(shippingAmount)}</td>
+                                    </tr>
+                                    <tr>
+                                      <td style="padding: 12px 18px 20px; font-weight: 700;">Total</td>
+                                      <td></td>
+                                      <td></td>
+                                      <td style="padding: 12px 18px 20px; text-align: right; font-weight: 700;">${receiptAmount.format(input.total)}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                          </table>
+
+                          <p class="receipt-note" style="margin: 36px auto 0; max-width: 560px; font-size: 16px; line-height: 1.4; text-align: center;">
+                            Once we get tracking number, we will notify you again via email
+                          </p>
+
+                          <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 32px auto 0; border-collapse: collapse;">
+                            <tr>
+                              <td style="width: 32px; height: 32px; border-radius: 999px; background: #f45a2a; color: #ffffff; font-size: 12px; font-weight: 700; text-align: center; vertical-align: middle;">
+                                logo
+                              </td>
+                              <td style="padding-left: 12px; font-size: 14px; vertical-align: middle;">
+                                UGC
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
-      </table>
-      <p style="font-size: 18px; margin-top: 16px;">
-        <strong>Total: ${money.format(input.total)}</strong>
-      </p>
-      <p>We appreciate your order.</p>
-    </div>
+        </table>
+      </body>
+    </html>
   `;
 
   const text = [
-    `Thanks, ${input.customerName?.trim() || "Customer"}!`,
+    `Payment Confirmed: Order ID ${input.orderId}`,
     "",
+    `Thank You For Your Purchase, ${input.customerName?.trim() || "Customer"}!`,
     "Your payment was successful. Here is your receipt.",
-    `Order ID: ${input.orderId}`,
     `Paid at: ${paidAtLabel}`,
     "",
     ...linesText,
+    `Shipping Cost: ${money.format(shippingAmount)}`,
     "",
     `Total: ${money.format(input.total)}`,
     "",
-    "We appreciate your order.",
+    "Once we get tracking number, we will notify you again via email",
+    "UGC",
   ].join("\n");
 
   return sendEmail({
