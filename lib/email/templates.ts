@@ -223,9 +223,6 @@ export const sendOrderReceiptEmail = async (input: {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="receipt-card" style="max-width: 1128px; min-height: 740px; margin: 0 auto; background: #ffffff; border-radius: 14px; border-collapse: separate;">
                 <tr>
                   <td style="padding: 36px 40px; vertical-align: top;">
-                    <h1 class="receipt-title" style="margin: 0; font-size: 24px; line-height: 1.25; font-weight: 700;">
-                      Payment Confirmed: Order ID ${escapeHtml(input.orderId)}
-                    </h1>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="receipt-content" style="padding-top: 290px; border-collapse: collapse;">
                       <tr>
