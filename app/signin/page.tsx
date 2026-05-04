@@ -74,6 +74,12 @@ function SignInForm() {
           />
         </div>
 
+        <div className="mt-3 text-right">
+          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+            Forgot password?
+          </Link>
+        </div>
+
         {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
 
         <button

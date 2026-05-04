@@ -16,6 +16,8 @@ const PBKDF2_KEY_LENGTH = 32;
 const PBKDF2_DIGEST = "sha256";
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const hashResetToken = (token: string) =>
+  crypto.createHash("sha256").update(token).digest("hex");
 
 const hashLegacyPassword = (password: string) =>
   crypto.createHash("sha256").update(password).digest("hex");
@@ -34,6 +36,9 @@ const hashPassword = (password: string) => {
 
   return `${PBKDF2_PREFIX}$${PBKDF2_ITERATIONS}$${salt}$${hash}`;
 };
+
+export const isPasswordStrongEnough = (password: string) =>
+  password.trim().length >= 8;
 
 const safeEqual = (left: string, right: string) => {
   const leftBuffer = Buffer.from(left, "utf8");
@@ -142,6 +147,109 @@ export const createCustomer = async (input: {
   });
 
   return { ok: true as const, user };
+};
+
+export const createPasswordResetToken = async (emailInput: string) => {
+  const email = normalizeEmail(emailInput);
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, email: true, name: true },
+  });
+
+  if (!user) {
+    return { ok: true as const, user: null, token: null };
+  }
+
+  const token = crypto.randomBytes(32).toString("base64url");
+  const tokenHash = hashResetToken(token);
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+
+  await prisma.$transaction([
+    prisma.passwordResetToken.updateMany({
+      where: {
+        userId: user.id,
+        usedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    }),
+    prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    }),
+  ]);
+
+  return { ok: true as const, user, token };
+};
+
+export const resetPasswordWithToken = async (input: {
+  token: string;
+  password: string;
+}) => {
+  const token = input.token.trim();
+  const password = input.password.trim();
+
+  if (!token) {
+    return { ok: false as const, error: "Reset token is required." };
+  }
+
+  if (!isPasswordStrongEnough(password)) {
+    return {
+      ok: false as const,
+      error: "Password must be at least 8 characters.",
+    };
+  }
+
+  const tokenRecord = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash: hashResetToken(token) },
+    include: {
+      user: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (
+    !tokenRecord ||
+    tokenRecord.usedAt ||
+    tokenRecord.expiresAt.getTime() <= Date.now()
+  ) {
+    return {
+      ok: false as const,
+      error: "This reset link is invalid or expired.",
+    };
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: tokenRecord.user.id },
+      data: { passwordHash: hashPassword(password) },
+    }),
+    prisma.passwordResetToken.update({
+      where: { id: tokenRecord.id },
+      data: { usedAt: new Date() },
+    }),
+    prisma.passwordResetToken.updateMany({
+      where: {
+        userId: tokenRecord.user.id,
+        usedAt: null,
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    }),
+  ]);
+
+  return { ok: true as const };
 };
 
 export const validateCredentials = async (input: {

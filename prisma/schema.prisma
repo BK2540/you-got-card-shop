@@ -85,8 +85,24 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 
+  passwordResetTokens PasswordResetToken[]
+
   @@index([email])
   @@index([role])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model HomeContent {

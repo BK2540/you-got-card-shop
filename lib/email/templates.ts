@@ -127,6 +127,70 @@ export const sendRegistrationEmail = async (input: {
   });
 };
 
+export const sendPasswordResetEmail = async (input: {
+  name?: string | null;
+  email: string;
+  resetUrl: string;
+}) => {
+  const safeName = escapeHtml(input.name?.trim() || "there");
+  const safeResetUrl = escapeHtml(input.resetUrl);
+  const subject = "Reset your You Got Card Shop password";
+
+  const html = `
+    <!doctype html>
+    <html>
+      <body style="margin: 0; padding: 0; background: transparent;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: transparent; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 24px 16px; font-family: Arial, sans-serif; color: #111111;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; margin: 0 auto; background: #ffffff; border: 2px solid #f45a2a; border-radius: 18px; border-collapse: separate;">
+                <tr>
+                  <td style="padding: 34px 30px;">
+                    <h1 style="margin: 0; font-size: 24px; line-height: 1.25;">Reset your password</h1>
+                    <p style="margin: 18px 0 0; font-size: 15px; line-height: 1.5;">Hi ${safeName},</p>
+                    <p style="margin: 12px 0 0; font-size: 15px; line-height: 1.5;">
+                      We received a request to reset your You Got Card Shop password. This link expires in 1 hour.
+                    </p>
+                    <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 28px 0; border-collapse: collapse;">
+                      <tr>
+                        <td style="border-radius: 999px; background: #f45a2a;">
+                          <a href="${safeResetUrl}" style="display: inline-block; padding: 12px 22px; color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none;">
+                            Reset password
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #555555;">
+                      If you did not request this, you can ignore this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const text = [
+    `Hi ${input.name?.trim() || "there"},`,
+    "",
+    "We received a request to reset your You Got Card Shop password.",
+    "This link expires in 1 hour:",
+    input.resetUrl,
+    "",
+    "If you did not request this, you can ignore this email.",
+  ].join("\n");
+
+  return sendEmail({
+    to: input.email,
+    subject,
+    html,
+    text,
+  });
+};
+
 export const sendOrderReceiptEmail = async (input: {
   email: string;
   customerName?: string | null;
